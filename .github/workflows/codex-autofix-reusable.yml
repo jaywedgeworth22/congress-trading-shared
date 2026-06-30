@@ -1,0 +1,63 @@
+name: Codex Autofix (Reusable)
+
+# Shared infrastructure for the Codex autofix loop — called by individual repos
+# that want the same triggers / permissions / concurrency / Claude action config.
+# Each repo supplies its own prompt so behaviour stays auditable in-repo.
+#
+# To onboard a new repo:
+#   1. Make sure the repo has ANTHROPIC_API_KEY and (optionally) GH_PAT secrets.
+#   2. Create .github/workflows/codex-autofix.yml following the caller template in
+#      this repo's AGENTS.md or the existing Agentic Trading / Congress.Trade examples.
+#
+# Org-level alternative (preferred):
+#   Move this file to jaywedgeworth22/.github/workflows/codex-autofix-reusable.yml
+#   and call it as jaywedgeworth22/.github/workflows/codex-autofix-reusable.yml@main.
+#   See docs/how-to-setup-org-dot-github.md for setup steps.
+
+on:
+  workflow_call:
+    inputs:
+      prompt:
+        required: true
+        type: string
+        description: "Full prompt for the Claude autofix agent"
+      claude_args:
+        required: false
+        type: string
+        default: |
+          --max-turns 60
+          --allowedTools "Edit,Write,Read,Bash"
+        description: "Extra CLI args passed to claude-code-action"
+      allowed_bots:
+        required: false
+        type: string
+        default: "chatgpt-codex-connector,chatgpt-codex-connector[bot]"
+        description: "Allowed bot actors (normalised by the action: lowercased, [bot] stripped)"
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+      GH_PAT:
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          allowed_bots: ${{ inputs.allowed_bots }}
+          prompt: ${{ inputs.prompt }}
+          claude_args: ${{ inputs.claude_args }}
