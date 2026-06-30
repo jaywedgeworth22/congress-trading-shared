@@ -66,6 +66,7 @@ export const UsageTelemetryEventSchema = z.object({
   windowEnd: z.string().datetime().optional(),
   occurredAt: z.string().datetime().optional(),
   metadata: UsageTelemetryMetadataSchema.optional(),
+  idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
 export const UsageTelemetryBatchSchema = z.object({
@@ -92,6 +93,30 @@ export function usageMonitorIngestUrl(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, "")}${API_USAGE_MONITOR_INGEST_PATH}`;
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Computes the same deterministic idempotency key the API Usage Monitor server
+ * derives server-side as a fallback. Computing and attaching it here ensures
+ * retries of the same event collapse to the same key instead of each retry
+ * getting its own random fallback key on the server.
+ */
+export async function deriveUsageTelemetryIdempotencyKey(event: {
+  sourceApp: string;
+  provider: string;
+  metricType: string;
+  keyRef?: string;
+  occurredAt?: string;
+}): Promise<string | undefined> {
+  if (!event.occurredAt) return undefined;
+  const basis = [event.sourceApp, event.provider, event.metricType, event.keyRef ?? "", event.occurredAt].join("|");
+  return sha256Hex(basis);
+}
+
 export interface UsageTelemetryClientOptions {
   baseUrl: string;
   token: string;
@@ -104,7 +129,16 @@ export function createUsageTelemetryClient(options: UsageTelemetryClientOptions)
 
   return {
     async send(events: UsageTelemetryEvent[]): Promise<UsageTelemetryIngestResponse> {
-      const body = UsageTelemetryBatchSchema.parse({ events });
+      const parsed = UsageTelemetryBatchSchema.parse({ events });
+      const body: UsageTelemetryBatch = {
+        events: await Promise.all(
+          parsed.events.map(async (event) => {
+            if (event.idempotencyKey) return event;
+            const idempotencyKey = await deriveUsageTelemetryIdempotencyKey(event);
+            return idempotencyKey ? { ...event, idempotencyKey } : event;
+          }),
+        ),
+      };
       const res = await fetchImpl(url, {
         method: "POST",
         headers: {
