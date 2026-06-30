@@ -101,9 +101,23 @@ async function sha256Hex(input: string): Promise<string> {
 
 /**
  * Computes the same deterministic idempotency key the API Usage Monitor server
- * derives server-side as a fallback. Computing and attaching it here ensures
+ * derives server-side as a fallback (see `deriveIdempotencyKey` in that repo's
+ * `src/lib/usage-telemetry.ts`). Computing and attaching it here ensures
  * retries of the same event collapse to the same key instead of each retry
  * getting its own random fallback key on the server.
+ *
+ * CONTRACT — this MUST stay byte-for-byte identical to the server algorithm:
+ *   basis = `${sourceApp}|${provider}|${metricType}|${keyRef ?? ""}|${occurredAt}`
+ *   key   = sha256Hex(basis)
+ *
+ * Both sides apply their own defaulting (e.g. metricType -> "usage") BEFORE
+ * computing the basis string, so `event` here is expected to already be the
+ * fully-defaulted event (see `send()` below, which derives the key from
+ * `UsageTelemetryBatchSchema.parse(...)` output, after Zod's `.default()`
+ * values have been applied). If either side ever changes the field order,
+ * the join separator, the hash algorithm, or *when* defaults are applied
+ * relative to hashing, idempotency will silently break — update both repos
+ * together and bump a version marker if the format ever changes.
  */
 export async function deriveUsageTelemetryIdempotencyKey(event: {
   sourceApp: string;
