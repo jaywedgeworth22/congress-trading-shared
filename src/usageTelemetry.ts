@@ -99,6 +99,18 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Length-prefixes each field before joining, so two fields that straddle a
+// delimiter character (e.g. provider="b|c" + keyRef="" vs provider="b" +
+// keyRef="c") can never hash to the same basis string. Each field is encoded
+// as `<utf8-byte-length>:<value>` (a la netstrings), which is unambiguous
+// because the length prefix tells the reader exactly where the value ends -
+// no value can contain a byte sequence that gets misread as a boundary.
+// CONTRACT: this MUST stay byte-for-byte identical to the server-side
+// algorithm in the API Usage Monitor repo's `src/lib/usage-telemetry.ts`.
+function encodeIdempotencyField(value: string): string {
+  return `${new TextEncoder().encode(value).length}:${value}`;
+}
+
 /**
  * Computes the same deterministic idempotency key the API Usage Monitor server
  * derives server-side as a fallback (see `deriveIdempotencyKey` in that repo's
@@ -107,15 +119,17 @@ async function sha256Hex(input: string): Promise<string> {
  * getting its own random fallback key on the server.
  *
  * CONTRACT — this MUST stay byte-for-byte identical to the server algorithm:
- *   basis = `${sourceApp}|${provider}|${metricType}|${keyRef ?? ""}|${occurredAt}`
+ *   basis = encodeField(sourceApp) + encodeField(provider) + encodeField(metricType)
+ *         + encodeField(keyRef ?? "") + encodeField(occurredAt)
  *   key   = sha256Hex(basis)
+ * where encodeField(v) = `${utf8ByteLength(v)}:${v}` (see encodeIdempotencyField).
  *
  * Both sides apply their own defaulting (e.g. metricType -> "usage") BEFORE
  * computing the basis string, so `event` here is expected to already be the
  * fully-defaulted event (see `send()` below, which derives the key from
  * `UsageTelemetryBatchSchema.parse(...)` output, after Zod's `.default()`
  * values have been applied). If either side ever changes the field order,
- * the join separator, the hash algorithm, or *when* defaults are applied
+ * the encoding scheme, the hash algorithm, or *when* defaults are applied
  * relative to hashing, idempotency will silently break — update both repos
  * together and bump a version marker if the format ever changes.
  */
@@ -127,7 +141,9 @@ export async function deriveUsageTelemetryIdempotencyKey(event: {
   occurredAt?: string;
 }): Promise<string | undefined> {
   if (!event.occurredAt) return undefined;
-  const basis = [event.sourceApp, event.provider, event.metricType, event.keyRef ?? "", event.occurredAt].join("|");
+  const basis = [event.sourceApp, event.provider, event.metricType, event.keyRef ?? "", event.occurredAt]
+    .map(encodeIdempotencyField)
+    .join("");
   return sha256Hex(basis);
 }
 
