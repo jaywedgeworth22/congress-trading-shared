@@ -1,5 +1,5 @@
 import type { MktCapBucket } from "./types";
-import { MKT_CAP_THRESHOLDS } from "./constants";
+import { MKT_CAP_THRESHOLDS, TICKER_ALIASES } from "./constants";
 
 // ---- Ticker normalization ----
 
@@ -16,10 +16,10 @@ export function normalizeTicker(raw: string | null | undefined): string | null {
 /** Resolve ticker aliases (corporate actions, renames). */
 export function resolveTickerAlias(
   ticker: string,
-  aliases?: Record<string, string>,
+  aliases: Readonly<Record<string, string>> = TICKER_ALIASES,
 ): string {
-  const map = aliases ?? {};
-  return map[ticker] ?? ticker;
+  const normalized = normalizeTicker(ticker) ?? ticker.trim().toUpperCase();
+  return aliases[normalized] ?? normalized;
 }
 
 // ---- Market cap bucket ----

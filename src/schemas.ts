@@ -2,10 +2,44 @@ import { z } from "zod";
 
 // ---- Chamber / Party / Owner ----
 
+function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+export const IsoDateSchema = z.string().refine(isIsoDate, {
+  message: "Expected a valid YYYY-MM-DD date",
+});
+
 export const ChamberSchema = z.enum(["house", "senate"]);
 export const PartyBucketSchema = z.enum(["D", "R", "O"]);
 export const OwnerSchema = z.enum(["self", "spouse", "joint", "dependent"]);
 export const TxTypeSchema = z.enum(["P", "S", "E"]);
+export const AssetTypeCategorySchema = z.enum([
+  "public_equity",
+  "private_equity",
+  "option",
+  "fund",
+  "fixed_income_government",
+  "fixed_income_corporate",
+  "fixed_income_asset_backed",
+  "cash",
+  "retirement_or_529",
+  "real_estate",
+  "private_fund",
+  "business_interest",
+  "crypto",
+  "insurance_annuity",
+  "trust",
+  "commodity_collectible",
+  "derivative",
+  "intellectual_property",
+  "receivable",
+  "other_security",
+  "other",
+  "unknown",
+]);
 
 // ---- Market data ----
 
@@ -14,7 +48,7 @@ export const MktCapBucketSchema = z.enum([
 ]);
 
 export const PriceCloseSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  date: IsoDateSchema,
   close: z.number(),
   volume: z.number().optional(),
 });
@@ -41,6 +75,13 @@ export const SecurityRefSchema = z.object({
   sicCode: z.string().nullable(),
   sicDescription: z.string().nullable(),
   source: z.string().nullable(),
+  enrichedAt: z.string().nullable().optional(),
+  currentPrice: z.number().nullable().optional(),
+  currentPriceDate: IsoDateSchema.nullable().optional(),
+});
+
+export const SecurityRefInputSchema = SecurityRefSchema.partial().extend({
+  ticker: z.string().min(1).max(20),
 });
 
 // ---- Transaction ----
@@ -54,6 +95,9 @@ export const CongressTransactionSchema = z.object({
   assetName: z.string(),
   ticker: z.string().nullable(),
   assetType: z.string().nullable(),
+  assetTypeName: z.string().nullable().optional(),
+  assetTypeCategory: AssetTypeCategorySchema.nullable().optional(),
+  assetTypeCategoryLabel: z.string().nullable().optional(),
   txType: TxTypeSchema,
   amountMin: z.number().nullable(),
   amountMax: z.number().nullable(),
@@ -69,6 +113,7 @@ export const CongressTransactionSchema = z.object({
   refCompanyName: z.string().nullable().optional(),
   refSector: z.string().nullable().optional(),
   refMarketCap: z.number().nullable().optional(),
+  refMarketCapBucket: z.string().nullable().optional(),
   refCountry: z.string().nullable().optional(),
   refExchangeShort: z.string().nullable().optional(),
   refAssetClass: z.string().nullable().optional(),
@@ -87,7 +132,7 @@ export const TransactionsPageSchema = z.object({
 
 export const FundamentalRowSchema = z.object({
   ticker: z.string(),
-  date: z.string(),
+  date: IsoDateSchema,
   peRatio: z.number().optional(),
   eps: z.number().optional(),
   beta: z.number().optional(),
@@ -101,7 +146,7 @@ export const FundamentalRowSchema = z.object({
 
 export const AnalystRowSchema = z.object({
   ticker: z.string(),
-  date: z.string(),
+  date: IsoDateSchema,
   rating: z.string().optional(),
   strongBuy: z.number().optional(),
   buy: z.number().optional(),
@@ -116,7 +161,7 @@ export const AnalystRowSchema = z.object({
 
 export const InsiderRowSchema = z.object({
   ticker: z.string(),
-  date: z.string(),
+  date: IsoDateSchema,
   sentiment: z.number(),
   buyFilings: z.number(),
   sellFilings: z.number(),
@@ -127,7 +172,7 @@ export const InsiderRowSchema = z.object({
 
 export const ShortVolumeRowSchema = z.object({
   ticker: z.string(),
-  date: z.string(),
+  date: IsoDateSchema,
   ratio: z.number(),
   elevated: z.boolean(),
 });
@@ -136,11 +181,11 @@ export const PriceSeriesSchema = z.object({
   ticker: z.string(),
   closes: z.array(PriceCloseSchema),
   currentPrice: z.number().optional(),
-  currentPriceDate: z.string().optional(),
+  currentPriceDate: IsoDateSchema.optional(),
 });
 
 export const SharePayloadSchema = z.object({
-  refs: z.array(SecurityRefSchema).optional(),
+  refs: z.array(SecurityRefInputSchema).optional(),
   spx: z.array(PriceCloseSchema).optional(),
   prices: z.array(PriceSeriesSchema).optional(),
   insider: z.array(InsiderRowSchema).optional(),

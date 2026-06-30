@@ -26,7 +26,7 @@ export interface CongressTransaction {
   ticker: string | null;
   assetType: string | null;
   assetTypeName?: string | null;
-  assetTypeCategory?: string | null;
+  assetTypeCategory?: AssetTypeCategory | null;
   assetTypeCategoryLabel?: string | null;
   txType: TxType;
   amountMin: number | null;
@@ -76,6 +76,30 @@ export interface TransactionsQuery {
 
 export type MktCapBucket = "mega" | "large" | "mid" | "small" | "micro" | "nano";
 
+export type AssetTypeCategory =
+  | "public_equity"
+  | "private_equity"
+  | "option"
+  | "fund"
+  | "fixed_income_government"
+  | "fixed_income_corporate"
+  | "fixed_income_asset_backed"
+  | "cash"
+  | "retirement_or_529"
+  | "real_estate"
+  | "private_fund"
+  | "business_interest"
+  | "crypto"
+  | "insurance_annuity"
+  | "trust"
+  | "commodity_collectible"
+  | "derivative"
+  | "intellectual_property"
+  | "receivable"
+  | "other_security"
+  | "other"
+  | "unknown";
+
 export interface SecurityRef {
   ticker: string;
   companyName: string | null;
@@ -98,7 +122,14 @@ export interface SecurityRef {
   sicCode: string | null;
   sicDescription: string | null;
   source: string | null;
+  enrichedAt?: string | null;
+  currentPrice?: number | null;
+  currentPriceDate?: string | null;
 }
+
+/** Import/upsert shape accepted by the peer securities-import endpoints. */
+export type SecurityRefInput = Pick<SecurityRef, "ticker"> &
+  Partial<Omit<SecurityRef, "ticker">>;
 
 export interface PriceClose {
   date: string;
@@ -271,7 +302,7 @@ export interface CommitteeConflict {
 // ---- Import/Share payload (App B → App A) ----
 
 export interface SharePayload {
-  refs?: SecurityRef[];
+  refs?: SecurityRefInput[];
   spx?: PriceClose[];
   prices?: PriceSeries[];
   insider?: InsiderRow[];
