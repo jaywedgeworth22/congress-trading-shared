@@ -1,6 +1,6 @@
 {
   "name": "@jaywedgeworth22/congress-trading-shared",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Shared types, Zod schemas, constants, and utilities for Congress.Trade ↔ Agentic Trading cross-app integration",
   "license": "UNLICENSED",
   "sideEffects": false,
