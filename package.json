@@ -1,6 +1,6 @@
 {
   "name": "@jaywedgeworth22/congress-trading-shared",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Shared types, Zod schemas, constants, and utilities for Congress.Trade ↔ Agentic Trading cross-app integration",
   "license": "UNLICENSED",
   "sideEffects": false,
@@ -21,7 +21,7 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "pack:dry": "npm pack --dry-run",
     "prepare": "npm run build",
-    "test": "npm run typecheck",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "publish:dry": "npm publish --dry-run"
   },
@@ -29,8 +29,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/node": "^26.1.0",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.9"
   },
   "overrides": {
     "esbuild": "0.28.1"
