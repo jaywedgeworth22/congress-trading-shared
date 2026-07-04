@@ -10,6 +10,10 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 
 ## In Progress
 - PR #3 (claude/agent-sync-stanza, CLAUDE) — AGENTS.md inter-agent coordination stanza; auto-merge pending.
+- GitHub Issues mirror of this board (claude/effort-issues-mirror, CLAUDE) — additive
+  `scripts/sync-effort-issues.py` + `.github/workflows/effort-issues-sync.yml`, ported verbatim from
+  Socratic.Trade (canonical pattern in `/Users/jay/apps/EFFORT-LOG-PROTOCOL.md`). Read-only mirror:
+  this board stays the source of truth, only the workflow writes issues.
 
 ## Planned / Reserved
 - (none)
