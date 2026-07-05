@@ -22,8 +22,7 @@
     "pack:dry": "npm pack --dry-run",
     "prepare": "npm run build",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "publish:dry": "npm publish --dry-run"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "^3.23.8"
