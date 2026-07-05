@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mappings, same shape; `resolveTickerAlias` still folds every alias for
   identity/display resolution. No consumer change is required to upgrade.
 
+### Removed
+- Dormant `publishConfig.registry` (retired private GitHub Packages registry)
+  from `package.json`, and stale `npm run publish:dry` references from
+  `README.md` / `AGENTS.md` — the package is tokenless git-install only, and the
+  `publish:dry` script was already decommissioned.
+
 ## [1.2.0] — 2026-07-04
 
 ### Added

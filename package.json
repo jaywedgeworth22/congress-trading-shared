@@ -42,8 +42,5 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jaywedgeworth22/congress-trading-shared.git"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   }
 }

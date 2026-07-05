@@ -28,9 +28,9 @@ Run these after package changes when feasible:
 ```bash
 npm run typecheck
 npm run build
+npm test
 npm audit
 npm run pack:dry
-npm run publish:dry
 ```
 
 ## Inter-agent coordination
