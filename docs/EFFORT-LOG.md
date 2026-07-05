@@ -7,6 +7,10 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board:
 
 ## Completed
 - **Global agent policy alignment and workspace sync (AG) — 2026-07-05.** Verified global config files (Gemini/Antigravity, Claude, Codex, and Cursor rules) are fully aligned with the latest efforts log, Slack WebSocket collab, and v4-pro model tiering protocols. Reset the local workspace `cursor` branch to `origin/main` to sync the latest `docs/EFFORT-LOG.md` and inter-agent coordination stanza.
+- **Mechanical repo maintenance batch (CURSOR, S) — 2026-07-05.** Completed on `cursor` branch:
+  deleted stale origin branches (`codex/package-git-prepare-20260629`, `codex/package-prepare-and-ci`),
+  decommissioned `.github/workflows/publish.yml` and `publish:dry` script, added `engines.node >=20.0.0`
+  to `package.json`, created `CHANGELOG.md` and `docs/RELEASE.md`.
 - **Effort-issues sync secondary-rate-limit hardening (CLAUDE) — PR #27, 2026-07-05.** Verbatim propagation of the fleet-standard `scripts/sync-effort-issues.py` hardening from Socratic.Trade: 2.5s creation throttle, Retry-After/exponential-backoff retries under a bounded 300s per-run budget, and exit-0 "PARTIAL SYNC — resume on next run" summary on budget exhaustion (bulk issue creation previously 403'd on GitHub's secondary rate limit and hard-failed the sync workflow; the sync is idempotent, so a partial pass resumes cleanly on the next run). Lands with this PR.
   Review refinements re-propagated via PR #29 (merged 2026-07-05): issue listing inside
   partial handling, server-sent Retry-After honored uncapped, 1s update throttle.
@@ -51,16 +55,6 @@ reservations, not locks — re-negotiate in #agent-sync._
   undifferentiated from FB→META; Socratic.Trade guards locally (`ACQUISITION_SOURCES`),
   Congress.Trade has no guard. Design the shared API change, surface to owner, then update both
   consumers. Paired rows on both consumer boards.
-- **Delete stale superseded branches (CURSOR, S)** — `codex/package-git-prepare-20260629` +
-  `codex/package-prepare-and-ci` on origin (deletion recommended in the tokenless rollout note),
-  plus dead local-only branches in the Mac clone.
-- **Decommission or gate `publish.yml` (CURSOR, S)** — still publishes to the retired private
-  GitHub Packages registry on any GitHub Release; delete or gate behind explicit opt-in per the
-  tokenless policy.
-- **CHANGELOG.md + release/tagging process doc (CURSOR, S)** — consumers pin `#semver:^1.2.x` /
-  `#v1.2.0` with no changelog between tags.
-- **Add `engines.node` to package.json (CURSOR, S)** — CI pins Node 20 but git-dep consumers get
-  no early incompatibility signal.
 - **Scheduled dependency-vulnerability automation (AG, S)** — `npm audit` only runs on push; add
   Dependabot or a cron audit so transitive vulns surface between pushes.
 - **LICENSE decision for the now-public repo (unassigned, S)** — `UNLICENSED` + public repo is
@@ -73,11 +67,12 @@ reservations, not locks — re-negotiate in #agent-sync._
 - t167 (stale prepare-script branches) — `codex/package-git-prepare-20260629` and
   `codex/package-prepare-and-ci` both diverged from `main` on 2026-06-29, before
   `usageTelemetry.ts`/vitest/CI workflows landed; the `prepare` script they intended to add
-  is already present and working on `main`. Verdict: both dead/superseded, recommended for
-  deletion (not deleted here — no explicit deletion request). Full verdict in
-  `docs/rollouts/2026-07-04-tokenless-git-dependency.md`.
+  is already present and working on `main`. **Deleted from origin 2026-07-05 (CURSOR).**
 
 ## Changelog of this log
+- 2026-07-05 — CURSOR: completed mechanical repo maintenance batch (stale branch deletion,
+  publish.yml decommission, engines.node, CHANGELOG.md + docs/RELEASE.md). Moved from
+  Planned to Completed; updated t167 from "recommended for deletion" to "deleted".
 - 2026-07-04 — bootstrapped by CLAUDE (effort-log standardization).
 - 2026-07-04 — CLAUDE: tokenless git dependency switch + stale-branch verdict (t167).
 - 2026-07-04 — CLAUDE: backlog exhaustiveness + assignment pass (owner-directed); seeded Planned
