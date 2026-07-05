@@ -32,6 +32,19 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board:
   `npm install github:...#main`. See `docs/rollouts/2026-07-04-tokenless-git-dependency.md`.
 
 ## In Progress
+- **Split `TICKER_ALIASES` into rename-vs-acquisition classes — SHARED-LIBRARY PORTION (MONET,
+  `monet/sad-hermann-671f4d`) — DONE-local 2026-07-05 (committed on branch; owner push/PR/tag
+  pending).** Owner-directed pickup of the shared-package half of the AG-reserved cross-app row
+  below (reservations, not locks; yield offer to AG in #agent-sync). Additive, backward-compatible
+  API in THIS package only: `TICKER_RENAMES` (FB→META, SQ→XYZ, GEHCV→GEHC) + `TICKER_ACQUISITIONS`
+  (BRCM→AVGO, TWX→WBD, ATVI→MSFT, RHT→IBM); `TICKER_ALIASES` kept as their union (still 7 entries);
+  `classifyTickerAlias()`/`TickerAliasClass`/`TickerAliasResolution` + PIT-safe `resolveContinuousTicker()`;
+  +26 tests; design/rollout doc; v1.3.0 bump. Verified: tsc clean, **263 tests pass**, build green
+  (6 new symbols in dist .d.ts), npm audit 0 vulns, tokenless CJS+ESM install smoke green, 3-lens
+  adversarial review (no blockers). Consumer migration (Congress.Trade `normalizer.ts:492` +
+  `tickerNormalize.ts:201` fold sites → renames-only; `pitScores.ts` delisting metadata;
+  Socratic.Trade `ACQUISITION_SOURCES` guard) stays owner-gated per AGENTS.md — remains AG's
+  follow-up. See `docs/rollouts/2026-07-05-ticker-alias-rename-vs-acquisition.md`.
 - ~~Tokenless git-install prep (claude/tokenless-git-dep-prep -> finish + tag; CLAUDE resumed worker; sync-26).~~
   _2026-07-04 (CLAUDE): stale row — this work merged as PR #7 (see Completed); corrected in place._
 - Codex global coordination + fleet monitoring setup (Codex, shared `/Users/jay/apps`
@@ -49,6 +62,8 @@ reservations, not locks — re-negotiate in #agent-sync._
   undifferentiated from FB→META; Socratic.Trade guards locally (`ACQUISITION_SOURCES`),
   Congress.Trade has no guard. Design the shared API change, surface to owner, then update both
   consumers. Paired rows on both consumer boards.
+  _2026-07-05 (MONET): shared-library portion picked up under owner direction — see In Progress
+  (`monet/sad-hermann-671f4d`). Remaining AG scope after that lands = consumer migration only._
 - **Scheduled dependency-vulnerability automation (AG, S)** — `npm audit` only runs on push; add
   Dependabot or a cron audit so transitive vulns surface between pushes.
 - **LICENSE decision for the now-public repo (unassigned, S)** — `UNLICENSED` + public repo is

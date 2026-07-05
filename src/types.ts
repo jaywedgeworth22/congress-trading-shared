@@ -77,6 +77,25 @@ export type {
   ClientTrade,
 } from "./schemas";
 
+// ---- Ticker alias classification ----
+
+/**
+ * Class of a curated ticker alias:
+ * - `rename` — a continuous rename/rebrand (same listed entity, price series continues).
+ * - `acquisition` — a delisting takeover (source ticker's price series ends at the deal).
+ */
+export type TickerAliasClass = "rename" | "acquisition";
+
+/** Resolution of a ticker alias source to its target, tagged with the corporate-action class. */
+export interface TickerAliasResolution {
+  /** The normalized source ticker (the alias key). */
+  from: string;
+  /** The current/target ticker the alias maps to. */
+  to: string;
+  /** Whether the mapping is a continuous rename or a discontinuous acquisition. */
+  class: TickerAliasClass;
+}
+
 // ---- Shared constant (consolidated: canonical is in constants.ts) ----
 
 export { APP_B_ORIGIN_TAG as APP_B_ORIGIN } from "./constants";

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-07-05
+
+### Added
+- **Rename-vs-acquisition classification for ticker aliases.** Split the flat
+  `TICKER_ALIASES` map into two semantically distinct classes so consumers can
+  distinguish a continuous rename (same listed entity, price series continues)
+  from a delisting acquisition (source ticker ceased trading in a takeover):
+  - `TICKER_RENAMES` — `FB→META`, `SQ→XYZ`, `GEHCV→GEHC`.
+  - `TICKER_ACQUISITIONS` — `BRCM→AVGO`, `TWX→WBD`, `ATVI→MSFT`, `RHT→IBM`.
+  - `classifyTickerAlias(ticker, opts?)` → `{ from, to, class } | null`
+    (`TickerAliasClass = "rename" | "acquisition"`).
+  - `resolveContinuousTicker(ticker, renames?)` — PIT-safe resolution that folds
+    only renames and leaves acquisition sources intact, so point-in-time return
+    attribution does not roll a delisted position into the acquirer's later
+    price series.
+- Tests for the two new maps (disjointness + union invariants) and both new
+  helpers, including the identity-vs-PIT behavioral contrast.
+
+### Changed
+- `TICKER_ALIASES` is now derived as the union of `TICKER_RENAMES` and
+  `TICKER_ACQUISITIONS`. **Fully backward compatible** — same 7 entries, same
+  mappings, same shape; `resolveTickerAlias` still folds every alias for
+  identity/display resolution. No consumer change is required to upgrade.
+
 ## [1.2.0] — 2026-07-04
 
 ### Added
@@ -51,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package prepared for install via `prepare` build script and CI.
 - GitHub Actions CI pipeline (typecheck, build, audit).
 
-[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/jaywedgeworth22/congress-trading-shared/releases/tag/v1.2.0
 [1.1.1]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.0.0...v1.1.0

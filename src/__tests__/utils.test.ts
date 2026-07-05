@@ -2,12 +2,19 @@ import { describe, it, expect } from "vitest";
 import {
   normalizeTicker,
   resolveTickerAlias,
+  classifyTickerAlias,
+  resolveContinuousTicker,
   marketCapBucket,
   bracketMidpoint,
   isIsoDate,
   daysBetween,
   mergeRefs,
 } from "../utils";
+import {
+  TICKER_ALIASES,
+  TICKER_RENAMES,
+  TICKER_ACQUISITIONS,
+} from "../constants";
 
 // =============================================================================
 // normalizeTicker
@@ -102,6 +109,151 @@ describe("resolveTickerAlias", () => {
     const customAliases = { OLD: "NEW" };
     expect(resolveTickerAlias("OLD", customAliases)).toBe("NEW");
     expect(resolveTickerAlias("UNKNOWN", customAliases)).toBe("UNKNOWN");
+  });
+
+  it("still folds acquisition sources for identity resolution (unchanged behavior)", () => {
+    // resolveTickerAlias is IDENTITY resolution: it folds acquisitions too. The PIT-safe
+    // contrast is resolveContinuousTicker (see below), which leaves acquisitions untouched.
+    for (const [from, to] of Object.entries(TICKER_ACQUISITIONS)) {
+      expect(resolveTickerAlias(from)).toBe(to);
+    }
+  });
+});
+
+// =============================================================================
+// classifyTickerAlias
+// =============================================================================
+
+describe("classifyTickerAlias", () => {
+  it("classifies continuous renames as 'rename'", () => {
+    expect(classifyTickerAlias("FB")).toEqual({
+      from: "FB",
+      to: "META",
+      class: "rename",
+    });
+    expect(classifyTickerAlias("SQ")).toEqual({
+      from: "SQ",
+      to: "XYZ",
+      class: "rename",
+    });
+    expect(classifyTickerAlias("GEHCV")).toEqual({
+      from: "GEHCV",
+      to: "GEHC",
+      class: "rename",
+    });
+  });
+
+  it("classifies delisting acquisitions as 'acquisition'", () => {
+    expect(classifyTickerAlias("BRCM")).toEqual({
+      from: "BRCM",
+      to: "AVGO",
+      class: "acquisition",
+    });
+    expect(classifyTickerAlias("TWX")).toEqual({
+      from: "TWX",
+      to: "WBD",
+      class: "acquisition",
+    });
+    expect(classifyTickerAlias("ATVI")).toEqual({
+      from: "ATVI",
+      to: "MSFT",
+      class: "acquisition",
+    });
+    expect(classifyTickerAlias("RHT")).toEqual({
+      from: "RHT",
+      to: "IBM",
+      class: "acquisition",
+    });
+  });
+
+  it("returns null for current/unknown tickers (not an alias source)", () => {
+    expect(classifyTickerAlias("AAPL")).toBeNull();
+    expect(classifyTickerAlias("META")).toBeNull(); // a target, not a source
+    expect(classifyTickerAlias("MSFT")).toBeNull(); // an acquisition target, not a source
+    expect(classifyTickerAlias("ZZZZ")).toBeNull();
+  });
+
+  it("is case-insensitive on the source ticker", () => {
+    expect(classifyTickerAlias("fb")?.class).toBe("rename");
+    expect(classifyTickerAlias("Atvi")?.class).toBe("acquisition");
+    expect(classifyTickerAlias("fb")?.to).toBe("META");
+  });
+
+  it("classifies every TICKER_ALIASES entry into exactly one class with a matching target", () => {
+    for (const [from, to] of Object.entries(TICKER_ALIASES)) {
+      const res = classifyTickerAlias(from);
+      expect(res).not.toBeNull();
+      expect(res!.from).toBe(from);
+      expect(res!.to).toBe(to);
+      expect(["rename", "acquisition"]).toContain(res!.class);
+    }
+  });
+
+  it("does not fall through the prototype chain for non-alias keys", () => {
+    // Guard against `"constructor" in obj`-style prototype hits.
+    expect(classifyTickerAlias("A")).toBeNull();
+  });
+
+  it("honors custom rename/acquisition maps via opts", () => {
+    const res = classifyTickerAlias("OLD", {
+      renames: { OLD: "NEW" },
+      acquisitions: {},
+    });
+    expect(res).toEqual({ from: "OLD", to: "NEW", class: "rename" });
+    const acq = classifyTickerAlias("GONE", {
+      renames: {},
+      acquisitions: { GONE: "SUCC" },
+    });
+    expect(acq).toEqual({ from: "GONE", to: "SUCC", class: "acquisition" });
+  });
+
+  it("prefers 'rename' when a caller passes overlapping custom maps", () => {
+    const res = classifyTickerAlias("DUP", {
+      renames: { DUP: "R" },
+      acquisitions: { DUP: "A" },
+    });
+    expect(res).toEqual({ from: "DUP", to: "R", class: "rename" });
+  });
+});
+
+// =============================================================================
+// resolveContinuousTicker (PIT-safe: renames only)
+// =============================================================================
+
+describe("resolveContinuousTicker", () => {
+  it("folds continuous renames to the current ticker", () => {
+    expect(resolveContinuousTicker("FB")).toBe("META");
+    expect(resolveContinuousTicker("SQ")).toBe("XYZ");
+    expect(resolveContinuousTicker("GEHCV")).toBe("GEHC");
+  });
+
+  it("does NOT fold acquisition sources (leaves the delisted ticker intact)", () => {
+    expect(resolveContinuousTicker("ATVI")).toBe("ATVI");
+    expect(resolveContinuousTicker("RHT")).toBe("RHT");
+    expect(resolveContinuousTicker("BRCM")).toBe("BRCM");
+    expect(resolveContinuousTicker("TWX")).toBe("TWX");
+  });
+
+  it("passes through current/unknown tickers", () => {
+    expect(resolveContinuousTicker("AAPL")).toBe("AAPL");
+    expect(resolveContinuousTicker("META")).toBe("META");
+  });
+
+  it("is case-insensitive and mirrors resolveTickerAlias only on renames", () => {
+    for (const from of Object.keys(TICKER_RENAMES)) {
+      expect(resolveContinuousTicker(from.toLowerCase())).toBe(
+        resolveTickerAlias(from),
+      );
+    }
+    // ...but diverges on acquisitions, which resolveTickerAlias folds and this does not.
+    for (const from of Object.keys(TICKER_ACQUISITIONS)) {
+      expect(resolveContinuousTicker(from)).not.toBe(resolveTickerAlias(from));
+    }
+  });
+
+  it("accepts a custom renames map", () => {
+    expect(resolveContinuousTicker("OLD", { OLD: "NEW" })).toBe("NEW");
+    expect(resolveContinuousTicker("ATVI", { OLD: "NEW" })).toBe("ATVI");
   });
 });
 

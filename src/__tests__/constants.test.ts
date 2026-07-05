@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   TICKER_ALIASES,
+  TICKER_RENAMES,
+  TICKER_ACQUISITIONS,
   MKT_CAP_THRESHOLDS,
   API_PATHS,
   WINDOW_PRESETS,
@@ -47,6 +49,96 @@ describe("TICKER_ALIASES", () => {
   it("no alias maps to itself", () => {
     for (const [key, value] of Object.entries(TICKER_ALIASES)) {
       expect(key).not.toBe(value);
+    }
+  });
+});
+
+// =============================================================================
+// TICKER_RENAMES / TICKER_ACQUISITIONS (rename-vs-acquisition split)
+// =============================================================================
+
+describe("TICKER_RENAMES", () => {
+  it("maps continuous renames to their current tickers", () => {
+    expect(TICKER_RENAMES.FB).toBe("META");
+    expect(TICKER_RENAMES.SQ).toBe("XYZ");
+    expect(TICKER_RENAMES.GEHCV).toBe("GEHC");
+  });
+
+  it("has exactly the 3 known continuous renames", () => {
+    expect(Object.keys(TICKER_RENAMES)).toHaveLength(3);
+  });
+
+  it("does NOT contain acquisition sources", () => {
+    for (const acqKey of Object.keys(TICKER_ACQUISITIONS)) {
+      expect(TICKER_RENAMES).not.toHaveProperty(acqKey);
+    }
+  });
+
+  it("all keys and values are uppercase, none self-mapping", () => {
+    for (const [key, value] of Object.entries(TICKER_RENAMES)) {
+      expect(key).toBe(key.toUpperCase());
+      expect(value).toBe(value.toUpperCase());
+      expect(key).not.toBe(value);
+    }
+  });
+});
+
+describe("TICKER_ACQUISITIONS", () => {
+  it("maps delisting acquisitions to their successor tickers", () => {
+    expect(TICKER_ACQUISITIONS.BRCM).toBe("AVGO");
+    expect(TICKER_ACQUISITIONS.TWX).toBe("WBD");
+    expect(TICKER_ACQUISITIONS.ATVI).toBe("MSFT");
+    expect(TICKER_ACQUISITIONS.RHT).toBe("IBM");
+  });
+
+  it("has exactly the 4 known delisting acquisitions", () => {
+    expect(Object.keys(TICKER_ACQUISITIONS)).toHaveLength(4);
+  });
+
+  it("does NOT contain rename sources", () => {
+    for (const renameKey of Object.keys(TICKER_RENAMES)) {
+      expect(TICKER_ACQUISITIONS).not.toHaveProperty(renameKey);
+    }
+  });
+
+  it("all keys and values are uppercase, none self-mapping", () => {
+    for (const [key, value] of Object.entries(TICKER_ACQUISITIONS)) {
+      expect(key).toBe(key.toUpperCase());
+      expect(value).toBe(value.toUpperCase());
+      expect(key).not.toBe(value);
+    }
+  });
+});
+
+describe("TICKER_ALIASES = TICKER_RENAMES ∪ TICKER_ACQUISITIONS", () => {
+  it("the two classes are disjoint (no shared source ticker)", () => {
+    const renameKeys = new Set(Object.keys(TICKER_RENAMES));
+    for (const acqKey of Object.keys(TICKER_ACQUISITIONS)) {
+      expect(renameKeys.has(acqKey)).toBe(false);
+    }
+  });
+
+  it("their key counts sum to the union count", () => {
+    expect(
+      Object.keys(TICKER_RENAMES).length +
+        Object.keys(TICKER_ACQUISITIONS).length,
+    ).toBe(Object.keys(TICKER_ALIASES).length);
+  });
+
+  it("the union is exactly the merge of both maps (backward-compatible)", () => {
+    expect(TICKER_ALIASES).toEqual({
+      ...TICKER_RENAMES,
+      ...TICKER_ACQUISITIONS,
+    });
+  });
+
+  it("every alias entry appears in exactly one class with the same target", () => {
+    for (const [key, value] of Object.entries(TICKER_ALIASES)) {
+      const inRename = TICKER_RENAMES[key as keyof typeof TICKER_RENAMES];
+      const inAcq = TICKER_ACQUISITIONS[key as keyof typeof TICKER_ACQUISITIONS];
+      const hits = [inRename, inAcq].filter((v) => v !== undefined);
+      expect(hits).toHaveLength(1);
+      expect(hits[0]).toBe(value);
     }
   });
 });
