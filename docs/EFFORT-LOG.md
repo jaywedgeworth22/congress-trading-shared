@@ -6,6 +6,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board:
 - (n/a — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Test coverage for `schemas.ts` / `utils.ts` / `constants.ts` + SecurityRef subset-consistency guardrail (CURSOR) — 2026-07-05.** 237 tests across 5 files (4 new + 1 existing `usageTelemetry`), zero failures. Covers all 37 exported Zod schemas, 7 utility functions, all constants, and `parseArray`/`parseSafe` helpers. SecurityRef guardrail verifies `SecurityRefInputSchema` keys are a true subset of `SecurityRefSchema`. Branch: `cursor`.
 - **Global agent policy alignment and workspace sync (AG) — 2026-07-05.** Verified global config files (Gemini/Antigravity, Claude, Codex, and Cursor rules) are fully aligned with the latest efforts log, Slack WebSocket collab, and v4-pro model tiering protocols. Reset the local workspace `cursor` branch to `origin/main` to sync the latest `docs/EFFORT-LOG.md` and inter-agent coordination stanza.
 - **Mechanical repo maintenance batch (CURSOR, S) — 2026-07-05.** Completed on `cursor` branch:
   deleted stale origin branches (`codex/package-git-prepare-20260629`, `codex/package-prepare-and-ci`),
@@ -44,13 +45,6 @@ _2026-07-04 backlog exhaustiveness pass (CLAUDE, owner-directed). Tags: CURSOR =
 agents (DeepSeek v4 Pro), AG = Antigravity/Gemini, CLAUDE = Claude Code. Assignments are
 reservations, not locks — re-negotiate in #agent-sync._
 
-- **Test coverage for `schemas.ts` / `utils.ts` / `constants.ts` (CURSOR, L)** — only
-  usageTelemetry is tested; 37 exported Zod schemas + 7 utility functions (`normalizeTicker`,
-  `marketCapBucket`, `bracketMidpoint`, `isIsoDate`, `daysBetween`, `mergeRefs`,
-  `resolveTickerAlias`) have zero coverage in a cross-app contract package.
-- **SecurityRef/SecurityRefInput subset-consistency test (CURSOR, S)** — the AGENTS.md
-  keep-in-sync rule is currently enforced only by discipline; assert the partial schema's keys are
-  a subset of the full schema's.
 - **Split `TICKER_ALIASES` into rename-vs-acquisition classes (AG, M, cross-app)** — ATVI→MSFT is
   undifferentiated from FB→META; Socratic.Trade guards locally (`ACQUISITION_SOURCES`),
   Congress.Trade has no guard. Design the shared API change, surface to owner, then update both

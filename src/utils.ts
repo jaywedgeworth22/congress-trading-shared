@@ -72,7 +72,7 @@ export function daysBetween(a: string, b: string): number {
 /** Merge two partial refs, preferring the second (later/more authoritative) for non-null fields. */
 export function mergeRefs<T extends Record<string, unknown>>(
   a: Partial<T> | null | undefined,
-  b: Partial<T> | null | undefined,
+  b: Partial<T> | Record<string, unknown> | null | undefined,
 ): Partial<T> {
   const result: Record<string, unknown> = { ...(a ?? {}) };
   if (b) {
