@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isIsoDate } from "./utils";
+import { CONGRESS_EVENT_TYPES } from "./constants";
 
 // ---- Chamber / Party / Owner ----
 
@@ -234,13 +235,7 @@ export type BundleResponse = z.infer<typeof BundleResponseSchema>;
 
 // ---- Push events (App A → App B) ----
 
-export const CongressEventTypeSchema = z.enum([
-  "congress.trade",
-  "insider.update",
-  "ref.upsert",
-  "price.eod",
-  "spx.eod",
-]);
+export const CongressEventTypeSchema = z.enum(CONGRESS_EVENT_TYPES);
 export type CongressEventType = z.infer<typeof CongressEventTypeSchema>;
 
 export const CongressEventSchema = z.object({
