@@ -4,7 +4,20 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board:
 (next-wave cycle 2).
 
 ## Deployed
-- (n/a — library package; "deployed" = version published/consumed by apps)
+- **v1.3.0 — 2026-07-05 (MONET).** `TICKER_ALIASES` rename-vs-acquisition split shipped in
+  **PR #53** (merged to `main` `4c35df2`) and tagged **`v1.3.0`** (→ `4c35df2`). Landed as the
+  coordinated release train: MONET's split + CURSOR's previously-stranded stack (237-test suite,
+  CHANGELOG.md/RELEASE.md, engines.node, publish.yml decommission) with CURSOR authorship intact,
+  + a release-hygiene commit that dropped the dormant `publishConfig.registry` and stale
+  `publish:dry` refs (flagged by the release audit). Verified: local tsc/263 tests/build green; CI
+  `verify` green; 3-lens release-readiness workflow (install / correctness / compat) all pass;
+  tokenless git-install from `#v1.3.0` builds `dist/` via `prepare` and imports correctly (CJS+ESM);
+  clone-at-tag build OK. Consumers can now pin `#v1.3.0`. Remaining follow-ups (not part of this
+  deploy): consumer pin bumps (Socratic.Trade exact-pin `#v1.2.0`→`#v1.3.0`, Congress.Trade lockfile
+  refresh) + AG's consumer migration, both cross-repo/owner-gated. The stale In-Progress
+  "DONE-local-unpushed" cursor rows below all landed via PR #53 — left for the next-wave
+  board-owner to reconcile against their issue-key structure (#17/#18/#21/#22/#23/#39).
+- (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
 - **Repair the stale Mac clone `main` (CLAUDE) — 2026-07-05.** Salvage-check verified all 7
@@ -200,6 +213,11 @@ locks — re-negotiate in #agent-sync._
   Full verdict in `docs/rollouts/2026-07-04-tokenless-git-dependency.md`.
 
 ## Changelog of this log
+- 2026-07-05 — MONET: **v1.3.0 DEPLOYED.** Ran the owner-directed release train — merged PR #53
+  (MONET `TICKER_ALIASES` split + CURSOR's stranded stack + release-hygiene commit) to `main`
+  `4c35df2` and tagged `v1.3.0`; verified tokenless git-install from the tag. Added the Deployed
+  row above. Did NOT rewrite the next-wave-owned In-Progress/Completed cursor rows or their issue
+  keys — flagged for the board-owner to reconcile.
 - 2026-07-05 — CLAUDE: completed both reserved CLAUDE lanes: stale-main repair (salvage-verified
   SUBSUMED via 2-lens + adversarial-verify workflow, then `git branch -f main origin/main`, now
   0/0) and CI-adoption blocker check (blocker not cleared — moved to Socratic.Trade PR #372 +
