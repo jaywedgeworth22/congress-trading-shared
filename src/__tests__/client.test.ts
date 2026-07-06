@@ -358,8 +358,8 @@ describe("CongressTradeClient", () => {
   describe("streamUrl", () => {
     it("returns a full SSE URL with encoded subscription id", () => {
       const client = new CongressTradeClient({ baseUrl: "https://custom.congress.trade" });
-      const url = client.streamUrl("sub-1");
-      expect(url).toBe("https://custom.congress.trade/api/stream?subscription=sub-1");
+      const url = client.streamUrl("sub/1&2");
+      expect(url).toBe("https://custom.congress.trade/api/stream?subscription=sub%2F1%262");
     });
   });
 });

@@ -268,7 +268,10 @@ export class SseParser {
       if (line.endsWith("\r")) line = line.slice(0, -1);
       if (line === "") {
         if (this.cur.data.length > 0) {
-          out.push({ event: this.cur.event, id: this.cur.id, data: this.cur.data.join("\n") });
+          const msg: SseMessage = { data: this.cur.data.join("\n") };
+          if (this.cur.event !== undefined) msg.event = this.cur.event;
+          if (this.cur.id !== undefined) msg.id = this.cur.id;
+          out.push(msg);
         }
         this.cur = { data: [] };
         continue;
