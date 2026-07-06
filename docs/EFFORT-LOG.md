@@ -27,6 +27,22 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Rename remaining 7 "Agentic Trading" references → "Socratic Trade" (CURSOR, S) — 2026-07-06.**
+  Updated package.json, AGENTS.md, README.md, CHANGELOG.md, docs/RELEASE.md, and
+  .github/workflows/codex-autofix-reusable.yml. All references now say "Socratic Trade"
+  or "Socratic.Trade". Branch: `main` (commit `836b935`).
+- **Add Zod schemas for AmountBracket, Subscription, SseMessage (CURSOR, S) — 2026-07-06.**
+  Added `AmountBracketSchema`, `SubscriptionSchema`, `SseMessageSchema` to schemas.ts.
+  Matches the established pattern of providing runtime validation alongside types.
+  Exported via barrel. Branch: `main` (commit `836b935`).
+- **Expand client.ts test coverage from 17 to 113 tests (CURSOR, M) — 2026-07-06.**
+  Added comprehensive tests for createSubscription (POST, secret handling, errors),
+  getBundle/prices/spx/fundamentals/analyst (with opts, null handling), all analytics
+  endpoints (ticker leaderboard, cluster buys, member leaderboard, member performance,
+  conviction, backtest, conflicts), error paths, empty array/null guards. SseParser
+  expanded from 3 to 11 tests (multi-line data, partial chunks, CRLF, field ordering,
+  multi-event dispatch, comments). Total: 332 tests passing. Branch: `main` (commit
+  `836b935`).
 - **Unify ticker normalization regex and preferred/depositary symbol helpers (AG, S) — 2026-07-06.** Unified WELL_FORMED_TICKER pattern with caret support and moved helpers to shared package. Merged via PR #97 (`27d253b`).
 - **Move STOCK Act amount bracket array and snapping/validation helpers to shared (AG, S) — 2026-07-06.** Migrated STOCK_ACT_BRACKETS array and matchBracket/isValidBracket/nearestBracket helpers to shared. Merged via PR #97 (`27d253b`).
 - **Align ClientAsset and ClientTrade schemas with actual production API outputs (AG, S) — 2026-07-06.** Added missing API fields to ClientAssetSchema and extended source validation in ClientTradeSchema. Merged via PR #98 (`f24b0e6`).
@@ -222,6 +238,9 @@ Jul 8 18:10 CT)._
 - ~~**Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
 
 ## Changelog of this log
+- 2026-07-06 — CURSOR: completed Agentic Trading → Socratic Trade rename (7 files), added
+  Zod schemas for AmountBracket/Subscription/SseMessage, expanded client tests from 17 to
+  113 (332 total). Commit `836b935` on `main`.
 - 2026-07-05 — CLAUDE: completed both reserved lanes: stale-main repair (salvage-verified
   SUBSUMED via 2-lens + adversarial-verify workflow, then `git branch -f main origin/main`,
   now 0/0) and CI-adoption blocker check (blocker not cleared — moved to Socratic.Trade
