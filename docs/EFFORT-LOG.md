@@ -3,6 +3,11 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
 
 ## Deployed
+- **v1.3.3 — 2026-07-06 (AG).** Released `v1.3.3` (tag `v1.3.3` pushed) containing the merged release stack:
+  - CongressTradeClient + SUBSCRIPTIONS API path (PR #55)
+  - balance/limit metricTypes (PR #56)
+  - createCongressEvent helper and type dedup (PR #57)
+  - Dependabot + weekly CI audit (PR #54)
 - **v1.3.0 — 2026-07-05 (MONET).** `TICKER_ALIASES` rename-vs-acquisition split DEPLOYED: PR #53
   merged to `main` (`4c35df2`) + tag `v1.3.0` pushed. Coordinated release train — MONET split +
   CURSOR's stranded stack (237 tests, CHANGELOG/RELEASE, engines.node, publish.yml decommission,
@@ -15,7 +20,10 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
-- **Centralize Event Building (AG, S) — 2026-07-05.** Created/exported a `createCongressEvent` helper and deduplicated types in `constants.ts`. Branch `antigravity/shared-events`, PR #57 open.
+- **Centralize Event Building (AG, S) — 2026-07-06.** Created/exported a `createCongressEvent` helper and deduplicated types in `constants.ts`. Merged via PR #57 (`b722e89`).
+- **PR #55 `ag/client-and-ticker` — CongressTradeClient + SUBSCRIPTIONS API path (AG, S) — 2026-07-06.** Merged to `main` (`1a6cea4`).
+- **PR #56 `ag/update-metric-types` — add balance/limit UsageTelemetry metric types (AG, S) — 2026-07-06.** Merged to `main` (`cbd2078`).
+- **PR #54 `ag/dependency-vulnerability-automation` — Dependabot + weekly CI cron (AG, S) — 2026-07-06.** Merged to `main` (`2d5a35c`).
 - **Re-verify the Socratic.Trade guard site cited by the consumer-migration row (AG, S) — 2026-07-05.** Located the unlanded `ACQUISITION_SOURCES = new Set(["ATVI", "TWX", "RHT"])` and `canonicalMarketDataSymbol` helper on Socratic.Trade's remote branch `origin/claude/elastic-rosalind-a2a48a` (commit `ded312c9fbd78627ee14047128730658fdde76ba`). Confirmed they do not exist on `main` yet, which is why grep failed. Verified the migration plan to use the new shared `classifyTickerAlias` and `resolveContinuousTicker` utilities once the release train lands. Branch `ag/reverify-socratic-guard`.
 - **Repair the stale Mac clone `main` (CLAUDE) — 2026-07-05.** Salvage-check verified all 7
   local-only commits SUBSUMED by `origin/main` before the move (2 independent lenses + adversarial
@@ -90,35 +98,6 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   Scope: reduce caller `codex-autofix.yml` storm odds/frequency in Socratic.Trade and
   Congress.Trade; shared reusable workflow inspected for compatibility. Preserve manual dispatch,
   round-cap behavior, and the shared reusable prompt/action infrastructure.
-- **PR #55 `ag/client-and-ticker` — CongressTradeClient + SUBSCRIPTIONS API path (AG, S) — new row,
-  IN PROGRESS 2026-07-05 (CLAUDE audit-c3).** _NOT redundant post-v1.3.0._ `gh pr view 55`: OPEN,
-  mergeable=UNKNOWN; `git merge-tree` shows the ONLY conflict is `docs/EFFORT-LOG.md` (code merges
-  clean). Forked from `4c35df2` (the v1.3.0 merge), so the ticker split is ALREADY in its base — the
-  branch does NOT duplicate/redo ticker work; net contribution is net-new `src/client.ts` (does not
-  exist on `main`) + `SUBSCRIPTIONS` const. Commit `81b2fd3` message "move ticker alias resolution to
-  shared" is MISLEADING (that code came from the v1.3.0 base, not this branch). Branch is only 2
-  commits behind main (both docs-mirror-only: `f95e151`, `713f581`). action=reclaim-and-finish. [AG
-  -> AG].
-- **PR #56 `ag/update-metric-types` — add balance/limit UsageTelemetry metric types (AG, S) — IN
-  PROGRESS 2026-07-05 (PR #56 open).** Added `"balance"` and `"limit"` to
-  `UsageTelemetryMetricTypeSchema` in `src/usageTelemetry.ts` to match the server-side API Usage
-  Monitor contract, and updated schema validation unit tests in `src/__tests__/usageTelemetry.test.ts`.
-  Branch `ag/update-metric-types`.
-  _2026-07-05 (CLAUDE audit-c3): `gh pr view 56`: OPEN, mergeable=UNKNOWN, CI verify PASS. Stacked
-  on #55 (contains `81b2fd3`+`4d50cb2`). Only conflict is `docs/EFFORT-LOG.md`. Verified net-new:
-  main's `UsageTelemetryMetricTypeSchema` enum does NOT contain balance/limit; branch adds both.
-  Cannot land until #55 lands or it is rebased off the stack. action=reclaim-and-finish. [AG -> AG]._
-- **PR #57 `antigravity/shared-events` — createCongressEvent helper + type dedup (AG, S) — new row,
-  IN PROGRESS 2026-07-05 (CLAUDE audit-c3).** `gh pr view 57`: OPEN, mergeable=CONFLICTING, CI verify
-  PASS. Stacked on #56 (6 commits ahead). Only conflict is `docs/EFFORT-LOG.md`. Verified net-new
-  `src/events.ts` (does not exist on `main`). Bottom of a 3-deep stack (#55->#56->#57) — must land in
-  order or be rebased. action=reclaim-and-finish. [AG -> AG].
-- **PR #54 `ag/dependency-vulnerability-automation` — Dependabot + weekly CI cron (AG, S) — IN
-  PROGRESS 2026-07-05 (PR #54 open).** Added weekly Dependabot checks (`.github/dependabot.yml`) for npm and github-actions ecosystems, and added a weekly cron schedule trigger to the CI verify job (`.github/workflows/ci.yml`) to ensure regular `npm audit` scans run between pushes. Branch `ag/dependency-vulnerability-automation`.
-  _2026-07-05 (CLAUDE audit-c3): `gh pr view 54`: OPEN, mergeable=UNKNOWN, CI verify PASS.
-  Independent of the #55 stack (1 commit ahead). Only conflict is `docs/EFFORT-LOG.md`. Net-new
-  `.github/dependabot.yml` + ci.yml cron trigger. NOTE: does NOT add the npm-test CI step (separate
-  Planned row remains open after this lands). action=reclaim-and-finish. [AG -> AG]._
 - **Codex Cloud Slack + effort-log readiness across all four apps (CODEX, shared fleet-infra) —
   DONE-local 2026-07-05; awaiting owner approval to push/open PRs.** Scope: audit/standardize Codex Cloud repo-visible setup so remote
   Codex sessions can read `docs/EFFORT-LOG.md` and use #agent-sync with the configured
