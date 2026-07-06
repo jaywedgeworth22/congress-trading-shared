@@ -3,6 +3,12 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
 
 ## Deployed
+- **v1.4.1 — 2026-07-06 (AG).** Released `v1.4.1` (tag `v1.4.1` pushed) containing:
+  - Renamed remaining "Agentic Trading" references to "Socratic Trade" (PR #119).
+  - Added Zod schemas for AmountBracket, Subscription, and SseMessage (PR #119).
+  - Expanded client.ts and SseParser test coverage to 337 tests (PR #119).
+  - Refined AmountBracketSchema to reject inverted bounds (PR #119).
+  - Fixed TypeScript 6.0.3 and Zod v4 compatibility issues in tsup/schemas (PR #119).
 - **v1.4.0 — 2026-07-06 (AG).** Released `v1.4.0` (tag `v1.4.0` pushed) containing:
   - Unified ticker normalizer regex & preferred/depositary helper functions (PR #97).
   - Relocated STOCK Act AmountBracket definitions & snapping/matching helpers (PR #97).
