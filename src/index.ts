@@ -9,3 +9,4 @@ export * from "./utils";
 export * from "./usageTelemetry";
 export * from "./client";
 export * from "./events";
+export * from "./brackets";
