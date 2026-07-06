@@ -84,6 +84,7 @@ export const API_PATHS = {
   ANALYTICS_CONFLICTS: "/api/analytics/conflicts",
   ADMIN_SECURITIES_IMPORT: "/api/admin/securities/import",
   EXPORT_BULK_SNAPSHOT: "/api/export/bulk-snapshot",
+  SUBSCRIPTIONS: "/api/subscriptions",
 } as const;
 
 // ---- Analytics window presets ----
