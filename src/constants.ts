@@ -115,3 +115,13 @@ export const DEFAULT_TRANSACTIONS_LIMIT = 100;
 export const MAX_REFS_BATCH = 500;
 
 export const APP_B_ORIGIN_TAG = "app-b" as const;
+
+// ---- Events ----
+
+export const CONGRESS_EVENT_TYPES = [
+  "congress.trade",
+  "insider.update",
+  "ref.upsert",
+  "price.eod",
+  "spx.eod",
+] as const;

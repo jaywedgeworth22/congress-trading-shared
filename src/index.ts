@@ -8,3 +8,4 @@ export * from "./constants";
 export * from "./utils";
 export * from "./usageTelemetry";
 export * from "./client";
+export * from "./events";

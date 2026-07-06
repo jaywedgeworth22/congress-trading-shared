@@ -98,14 +98,4 @@ export interface TickerAliasResolution {
 
 // ---- Shared constant (consolidated: canonical is in constants.ts) ----
 
-export { APP_B_ORIGIN_TAG as APP_B_ORIGIN } from "./constants";
-
-// ---- Event type list ----
-
-export const CONGRESS_EVENT_TYPES = [
-  "congress.trade",
-  "insider.update",
-  "ref.upsert",
-  "price.eod",
-  "spx.eod",
-] as const;
+export { APP_B_ORIGIN_TAG as APP_B_ORIGIN, CONGRESS_EVENT_TYPES } from "./constants";
