@@ -86,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Shared TypeScript types, Zod schemas, constants, and pure utilities for
-  Congress.Trade ↔ Agentic Trading cross-app integration.
+  Congress.Trade ↔ Socratic Trade cross-app integration.
 - Package prepared for install via `prepare` build script and CI.
 - GitHub Actions CI pipeline (typecheck, build, audit).
 

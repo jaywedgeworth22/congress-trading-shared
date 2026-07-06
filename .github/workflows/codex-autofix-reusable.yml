@@ -7,7 +7,7 @@ name: Codex Autofix (Reusable)
 # To onboard a new repo:
 #   1. Make sure the repo has ANTHROPIC_API_KEY and (optionally) GH_PAT secrets.
 #   2. Create .github/workflows/codex-autofix.yml following the caller template in
-#      this repo's AGENTS.md or the existing Agentic Trading / Congress.Trade examples.
+#      this repo's AGENTS.md or the existing Socratic Trade / Congress.Trade examples.
 #
 # Org-level alternative (preferred):
 #   Move this file to jaywedgeworth22/.github/workflows/codex-autofix-reusable.yml

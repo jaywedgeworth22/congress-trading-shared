@@ -1,6 +1,6 @@
 # congress-trading-shared
 
-Shared TypeScript contracts for the Congress.Trade and Agentic Trading cross-app integration.
+Shared TypeScript contracts for the Congress.Trade and Socratic Trade cross-app integration.
 
 This package owns the types, Zod schemas, API path constants, and small utilities that both apps can use for:
 
@@ -66,4 +66,4 @@ unless the user explicitly asks for a private registry again.)
 - `SecurityRef` is the full read-side shape.
 - `SecurityRefInput` is the partial import/upsert shape accepted by the peer import endpoints.
 - Date-bearing market/import rows validate as real `YYYY-MM-DD` calendar dates via `IsoDateSchema`.
-- `APP_B_ORIGIN` / `APP_B_ORIGIN_TAG` are the no-echo-loop origin tag for Agentic Trading-originated payloads.
+- `APP_B_ORIGIN` / `APP_B_ORIGIN_TAG` are the no-echo-loop origin tag for Socratic Trade-originated payloads.
