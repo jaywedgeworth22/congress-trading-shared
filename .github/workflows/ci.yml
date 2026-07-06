@@ -27,6 +27,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Run tests
+        run: npm test -- --coverage
+
       - name: Build
         run: npm run build
 
@@ -35,3 +38,56 @@ jobs:
 
       - name: Package dry run
         run: npm run pack:dry
+
+  smoke-install:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Pack package
+        id: pack
+        run: |
+          PACK_FILE=$(npm pack | tail -n 1)
+          echo "PACK_FILE=${PACK_FILE}" >> $GITHUB_OUTPUT
+          cp "$PACK_FILE" /tmp/package.tgz
+
+      - name: Smoke test CJS and ESM installs
+        run: |
+          mkdir -p /tmp/smoke-test
+          cd /tmp/smoke-test
+          npm init -y
+          
+          # Install the local packed tgz
+          npm install /tmp/package.tgz
+          
+          # Create CJS test script
+          cat << 'EOF' > test-cjs.cjs
+          const { TICKER_RENAMES, createCongressEvent } = require('@jaywedgeworth22/congress-trading-shared');
+          if (!TICKER_RENAMES) throw new Error('TICKER_RENAMES is missing in CJS');
+          if (typeof createCongressEvent !== 'function') throw new Error('createCongressEvent is not a function in CJS');
+          console.log('CJS import smoke test passed!');
+          EOF
+          
+          # Create ESM test script
+          cat << 'EOF' > test-esm.mjs
+          import { TICKER_RENAMES, createCongressEvent } from '@jaywedgeworth22/congress-trading-shared';
+          if (!TICKER_RENAMES) throw new Error('TICKER_RENAMES is missing in ESM');
+          if (typeof createCongressEvent !== 'function') throw new Error('createCongressEvent is not a function in ESM');
+          console.log('ESM import smoke test passed!');
+          EOF
+          
+          # Run the smoke scripts
+          node test-cjs.cjs
+          node test-esm.mjs
