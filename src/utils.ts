@@ -8,7 +8,18 @@ import {
 
 // ---- Ticker normalization ----
 
-const WELL_FORMED_TICKER = /^[A-Z]{1,5}([.-][A-Z]{1,2})?$/;
+export const WELL_FORMED_TICKER = /^[A-Z]{1,5}(\^[A-Z0-9]{1,2}|[.-][A-Z]{1,2})?$/;
+
+const PLACEHOLDER_TICKERS = new Set(["", "-", "--", "---", "N/A", "NA", "NONE", "NULL", "—"]);
+
+/** Clean a raw symbol: trim, uppercase, drop surrounding quotes/brackets. */
+export function clean(raw: string | null | undefined): string {
+  return (raw ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/^[("'[\s]+|[)"'\]\s]+$/g, "")
+    .trim();
+}
 
 /** Normalize a raw ticker string: uppercase, strip whitespace, validate format. */
 export function normalizeTicker(raw: string | null | undefined): string | null {
@@ -16,6 +27,121 @@ export function normalizeTicker(raw: string | null | undefined): string | null {
   const cleaned = raw.trim().toUpperCase();
   if (!WELL_FORMED_TICKER.test(cleaned)) return null;
   return cleaned;
+}
+
+/** True when the raw value is a "no ticker" placeholder (dash, N/A, blank). */
+export function isPlaceholderTicker(raw: string | null | undefined): boolean {
+  const c = clean(raw);
+  return c === "" || PLACEHOLDER_TICKERS.has(c);
+}
+
+/** Strip a preferred/depositary `$`-series suffix: "T$A" → "T", "RF$E" → "RF". */
+export function stripPreferredSeries(sym: string): string {
+  return sym.replace(/\$[A-Z0-9]+$/, "");
+}
+
+/** Normalize common preferred/depositary-share ticker spellings. */
+export function normalizePreferredTickerVariant(raw: string | null | undefined): string | null {
+  const sym = clean(raw);
+  if (!sym) return null;
+
+  let m = /^([A-Z]{1,5})\^([A-Z0-9]{1,2})$/.exec(sym);
+  if (m) return `${m[1]}^${m[2]}`;
+
+  m = /^([A-Z]{1,5})\$([A-Z0-9]{1,2})$/.exec(sym);
+  if (m) return `${m[1]}^${m[2]}`;
+
+  m = /^([A-Z]{1,5})-P([A-Z0-9])$/.exec(sym);
+  if (m) return `${m[1]}^${m[2]}`;
+
+  m = /^([A-Z]{1,5})[.-]PR([A-Z0-9])$/.exec(sym);
+  if (m) return `${m[1]}^${m[2]}`;
+
+  m = /^([A-Z]{1,5})\s+PR\s+([A-Z0-9])$/.exec(sym);
+  if (m) return `${m[1]}^${m[2]}`;
+
+  m = /^([A-Z]{1,5})\s+P(?:R)?([A-Z0-9])$/.exec(sym);
+  if (m) return `${m[1]}^${m[2]}`;
+
+  return null;
+}
+
+function normalizedAssetText(value: string): string {
+  return value
+    .toUpperCase()
+    .replace(/&/g, " AND ")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function preferredIssuerName(assetName: string): string | null {
+  const idx = assetName.search(/\b(?:DEPOSITARY\s+SHARES?|PREFERRED|PREFERENCE|PFD|PREF)\b/i);
+  if (idx <= 0) return null;
+  return assetName.slice(0, idx).trim().replace(/[,;:\s]+$/g, "");
+}
+
+/** Resolve preferred/depositary-share descriptions that include no ticker. */
+export function resolvePreferredTickerFromAssetName(
+  assetName: string | null | undefined,
+  resolveIssuerTicker: (issuerName: string) => string | null,
+): string | null {
+  if (!assetName) return null;
+  const text = normalizedAssetText(assetName);
+  if (!/\b(?:DEPOSITARY SHARES?|PREFERRED|PREFERENCE|PFD|PREF)\b/.test(text)) return null;
+
+  if (text.includes("JPMORGAN CHASE") && text.includes("DEPOSITARY SHARES") && text.includes("SERIES GG")) {
+    return "JPM^J";
+  }
+
+  const series = /\bSERIES\s+([A-Z0-9]{1,3})\b/.exec(text)?.[1];
+  if (!series || series.length !== 1) return null;
+
+  const issuerName = preferredIssuerName(assetName);
+  if (!issuerName) return null;
+  const issuer = resolveIssuerTicker(issuerName);
+  return issuer ? `${issuer}^${series}` : null;
+}
+
+/** Distinct share-class punctuation variants. */
+export function punctuationVariants(sym: string): string[] {
+  return Array.from(
+    new Set([sym, sym.replace(/[.-]/g, ""), sym.replace(/\./g, "-"), sym.replace(/-/g, ".")]),
+  ).filter(Boolean);
+}
+
+/** True when `sym` is a syntactically valid ticker we'll accept without a master hit. */
+export function isWellFormedTicker(sym: string): boolean {
+  return WELL_FORMED_TICKER.test(sym);
+}
+
+/** Fallback ticker resolver logic. */
+export function resolveTickerDeterministic(
+  raw: string | null | undefined,
+  isKnown: (sym: string) => string | null,
+): string | null {
+  const cleaned = clean(raw);
+  if (cleaned === "" || PLACEHOLDER_TICKERS.has(cleaned)) return null;
+
+  const preferred = normalizePreferredTickerVariant(cleaned);
+  if (preferred) return preferred;
+
+  const base = stripPreferredSeries(cleaned) || cleaned;
+
+  for (const candidate of punctuationVariants(base)) {
+    const hit = isKnown(candidate);
+    if (hit) return hit;
+  }
+
+  const aliasCleaned = resolveContinuousTicker(cleaned);
+  if (aliasCleaned !== cleaned) return isKnown(aliasCleaned) ?? aliasCleaned;
+
+  const aliasBase = resolveContinuousTicker(base);
+  if (aliasBase !== base) return isKnown(aliasBase) ?? aliasBase;
+
+  if (isWellFormedTicker(base)) return base;
+
+  return null;
 }
 
 /**
