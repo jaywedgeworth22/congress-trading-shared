@@ -6,6 +6,8 @@ export const UsageTelemetryMetricTypeSchema = z.enum([
   "quota",
   "tier",
   "health",
+  "balance",
+  "limit",
 ]);
 
 export const UsageTelemetryUnitSchema = z.enum([

@@ -497,6 +497,20 @@ describe("schema validation", () => {
       expect(result.success).toBe(false);
     });
 
+    it("accepts new metricTypes balance and limit", () => {
+      const balanceResult = UsageTelemetryEventSchema.safeParse({
+        ...validEvent,
+        metricType: "balance",
+      });
+      expect(balanceResult.success).toBe(true);
+
+      const limitResult = UsageTelemetryEventSchema.safeParse({
+        ...validEvent,
+        metricType: "limit",
+      });
+      expect(limitResult.success).toBe(true);
+    });
+
     it("applies defaults for billingMode and confidence", () => {
       const result = UsageTelemetryEventSchema.safeParse(validEvent);
       expect(result.success).toBe(true);
