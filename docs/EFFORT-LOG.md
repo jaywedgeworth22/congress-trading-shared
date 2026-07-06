@@ -33,6 +33,12 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Codex autofix storm guard (CODEX/AG) — 2026-07-06.** Landed trigger guard instructions inside `.github/workflows/codex-autofix-reusable.yml` instructing calling workflows to only run on pull_request_review:submitted and workflow_dispatch to avoid comment fanning. Branch: `main` (commit `2a754b5`).
+- **Codex Cloud Slack + effort-log readiness across all four apps (CODEX/AG) — 2026-07-06.** Landed setup and maintenance configuration (`.codex/setup.sh`, `.codex/maintenance.sh`), Slack synchronization helper (`scripts/slack-sync.sh`), and updated `AGENTS.md` instructions. Branch: `main` (commit `2a754b5`).
+- **Import snapshot/export types in Congress.Trade from shared package (CURSOR, S) — 2026-07-06.**
+  Replaced local `SnapshotTableInfo` and `SnapshotManifest` interfaces in `app/src/export/snapshot.ts`
+  and `app/src/export/routes.ts` with imports from `@jaywedgeworth22/congress-trading-shared`.
+  Branch: `cursor/snapshot-types` (commit `5e58ea9`). Verified: typecheck clean, 672 tests pass.
 - **Rename remaining 7 "Agentic Trading" references → "Socratic Trade" (CURSOR, S) — 2026-07-06.**
   Updated package.json, AGENTS.md, README.md, CHANGELOG.md, docs/RELEASE.md, and
   .github/workflows/codex-autofix-reusable.yml. All references now say "Socratic Trade"
@@ -129,16 +135,18 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
-- **Codex autofix storm guard (CODEX, workflow/fleet-infra) — DONE-local 2026-07-05; awaiting push/PR.**
-  Scope: reduce caller `codex-autofix.yml` storm odds/frequency in Socratic.Trade and
-  Congress.Trade; shared reusable workflow inspected for compatibility. Preserve manual dispatch,
-  round-cap behavior, and the shared reusable prompt/action infrastructure.
-- **Codex Cloud Slack + effort-log readiness across all four apps (CODEX, shared fleet-infra) —
-  DONE-local 2026-07-05; awaiting owner approval to push/open PRs.** Scope: audit/standardize Codex Cloud repo-visible setup so remote
-  Codex sessions can read `docs/EFFORT-LOG.md` and use #agent-sync with the configured
-  `SLACK_AGENT_NAME`, `SLACK_CHANNEL_ID`, `SLACK_PROJECT`, and runtime token/env settings. Keep
-  work out of dirty Cursor/Monet worktrees; reuse/adapt the closed PR #367 Slack helper rather than
-  creating a competing Slack Socket Mode client. Cross-app rows mirrored in the other live boards.
+- **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06.**
+  Refactor Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`)
+  to retire local telemetry definitions and import the shared `createUsageTelemetryClient` and
+  `UsageTelemetryEventSchema`. Branch: `cursor/telemetry-consolidation`.
+- **Retire duplicate API client fetchers and stream parser in Socratic.Trade (CURSOR, M) — started 2026-07-06.**
+  Replace local HTTP wrappers in `congress-trade-client.ts` and SSE parsing in `congress-stream.ts`
+  with `CongressTradeClient` and `SseParser` from shared package. Branch: `cursor/retire-client-dups`.
+- **Import snapshot/export types in Congress.Trade (CURSOR, S) — started 2026-07-06.**
+  Replace locally defined `SnapshotTableInfo` and `SnapshotManifest` in `export/snapshot.ts` with
+  shared-package imports. Branch: `cursor/snapshot-types`.
+  _2026-07-06 (CURSOR): completed — see Completed section._
+
 - **✅ DEPLOYED 2026-07-05 as v1.3.0 (PR #53 merged `4c35df2` + tag `v1.3.0`) — see the Deployed
   section at top. This In-Progress row is superseded; left for the next-wave board-owner to move.**
 - **Split `TICKER_ALIASES` into rename-vs-acquisition classes — SHARED-LIBRARY PORTION (MONET,
@@ -227,12 +235,14 @@ locks — re-negotiate in #agent-sync._
 - **Consolidate usage telemetry clients in both consumer apps (unassigned, M)** —
   Refactor Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`) to retire local telemetry definitions and instead
   import the shared `createUsageTelemetryClient` and `UsageTelemetryEventSchema`.
+  _2026-07-06 (CURSOR): claimed — moved to In Progress. Dispatched mid-tier subagent._
 - **Retire duplicate API client fetchers and stream parser in Socratic.Trade (unassigned, M)** —
   Replace local HTTP wrappers in Socratic.Trade's `congress-trade-client.ts` and SSE parsing in `congress-stream.ts` with the native, strongly-typed
   `CongressTradeClient` and `SseParser` from `@jaywedgeworth22/congress-trading-shared/src/client`.
-- ~~**Align ClientAsset and ClientTrade schemas with actual production API outputs (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
+  _2026-07-06 (CURSOR): claimed — moved to In Progress. Dispatched mid-tier subagent._
 - **Import snapshot/export types in Congress.Trade (unassigned, S)** —
   Replace locally defined `SnapshotTableInfo` and `SnapshotManifest` interfaces in Congress.Trade's `export/snapshot.ts` with direct imports from the shared package.
+  _2026-07-06 (CURSOR): completed — moved to Completed._
 
 ### 2026-07-05 audit cycle-3
 _Added by CLAUDE audit-c3 pass. Tags: CURSOR / CODEX / AG / MONET / CLAUDE / OWNER. Assignments are
