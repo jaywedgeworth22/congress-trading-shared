@@ -433,6 +433,9 @@ export type ClientTrade = z.infer<typeof ClientTradeSchema>;
 export const AmountBracketSchema = z.object({
   min: z.number().finite().nonnegative(),
   max: z.number().finite().nonnegative().nullable(),
+}).refine((data) => data.max === null || data.max >= data.min, {
+  message: "max must be greater than or equal to min",
+  path: ["max"],
 });
 
 // ---- Subscription (from CongressTradeClient.createSubscription) ----
