@@ -3,6 +3,13 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
 
 ## Deployed
+- **v1.4.0 — 2026-07-06 (AG).** Released `v1.4.0` (tag `v1.4.0` pushed) containing:
+  - Unified ticker normalizer regex & preferred/depositary helper functions (PR #97).
+  - Relocated STOCK Act AmountBracket definitions & snapping/matching helpers (PR #97).
+  - Aligned Zod schemas for ClientAsset and ClientTrade with production API outputs (PR #98).
+  - Vitest CI test suite execution with strict code coverage minimum thresholds (PR #96).
+  - Tokenless smoke-install verification job in CI (PR #96).
+  - Corrected docs/RELEASE.md consumer notification list (PR #96).
 - **v1.3.3 — 2026-07-06 (AG).** Released `v1.3.3` (tag `v1.3.3` pushed) containing the merged release stack:
   - CongressTradeClient + SUBSCRIPTIONS API path (PR #55)
   - balance/limit metricTypes (PR #56)
@@ -20,6 +27,12 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Unify ticker normalization regex and preferred/depositary symbol helpers (AG, S) — 2026-07-06.** Unified WELL_FORMED_TICKER pattern with caret support and moved helpers to shared package. Merged via PR #97 (`27d253b`).
+- **Move STOCK Act amount bracket array and snapping/validation helpers to shared (AG, S) — 2026-07-06.** Migrated STOCK_ACT_BRACKETS array and matchBracket/isValidBracket/nearestBracket helpers to shared. Merged via PR #97 (`27d253b`).
+- **Align ClientAsset and ClientTrade schemas with actual production API outputs (AG, S) — 2026-07-06.** Added missing API fields to ClientAssetSchema and extended source validation in ClientTradeSchema. Merged via PR #98 (`f24b0e6`).
+- **Add npm test and vitest coverage threshold gates to CI (AG, S) — 2026-07-06.** Configured coverage gates and added automated verify step to GHA. Merged via PR #96 (`2dcee40`).
+- **Add a tokenless smoke install verify job to CI (AG, S) — 2026-07-06.** Added smoke-install job to GHA to test clean build-on-install capability. Merged via PR #96 (`2dcee40`).
+- **Correct docs/RELEASE.md consumer list & document pin split (AG, S) — 2026-07-06.** Cleaned up notification targets and added tag-vs-semver note. Merged via PR #96 (`2dcee40`).
 - **Centralize Event Building (AG, S) — 2026-07-06.** Created/exported a `createCongressEvent` helper and deduplicated types in `constants.ts`. Merged via PR #57 (`b722e89`).
 - **PR #55 `ag/client-and-ticker` — CongressTradeClient + SUBSCRIPTIONS API path (AG, S) — 2026-07-06.** Merged to `main` (`1a6cea4`).
 - **PR #56 `ag/update-metric-types` — add balance/limit UsageTelemetry metric types (AG, S) — 2026-07-06.** Merged to `main` (`cbd2078`).
@@ -167,12 +180,7 @@ _Added by CLAUDE next-wave pass. Tags: CURSOR = Cursor background agents, AG = A
 CLAUDE = Claude Code, CODEX = Codex, OWNER = owner-run step. Assignments are reservations, not
 locks — re-negotiate in #agent-sync._
 
-- **Add npm test to the CI verify job in ci.yml (CURSOR, S)** — Insert a 'npm test' (vitest run)
-  step into `.github/workflows/ci.yml` between typecheck and build; today CI runs
-  typecheck/build/audit/pack:dry only. _(why now: the just-written 237-263-test suite gates
-  nothing — a change that breaks every schema test still merges green. Cheapest highest-value
-  follow-up unlocked by the cursor branch landing; land it immediately after (or as a rider on)
-  that PR.)_
+- ~~**Add npm test to the CI verify job in ci.yml (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
 - **Run the v1.3.0 release train: land cursor stack, land monet split, tag, bump consumers
   (OWNER, M)** — Push `cursor` (5 commits) -> PR -> merge; then push `monet/sad-hermann-671f4d`
   (`03d33bd`, stacked on cursor) -> PR -> merge; tag+push `v1.3.0`; then Socratic.Trade exact-pin
@@ -187,61 +195,20 @@ locks — re-negotiate in #agent-sync._
   verified this session — CI is purely advisory today; anyone can merge red or push directly to
   main. Becomes materially important the moment tests enter CI, and cheap to do now that the fleet
   already runs this pattern in the other two repos.)_
-- **Add a tokenless git-install smoke job to CI (pack + install + CJS/ESM import) (CODEX, S)** —
-  CI job that installs the package the way consumers do (`npm install <tarball or github:...>`)
-  into a temp project and imports it via both `require()` and `import`, asserting a couple of
-  exports exist. _(why now: both consumers install via tokenless git dependency relying on the
-  prepare-script build and the exports map; MONET verified this manually for v1.3.0 — automating
-  it catches prepare/exports-map regressions that typecheck/build/pack:dry cannot.)_
-- **Add vitest coverage reporting with a minimum-threshold gate (CURSOR, S)** — Add
-  `@vitest/coverage-v8`, a coverage config in `vitest.config.ts` with line/branch thresholds set
-  just below current levels, and run it in CI. _(why now: now that near-complete coverage of
-  schemas/utils/constants exists, a ratchet threshold prevents silent rot as new schemas are
-  added; without it the new suite decays exactly like the pre-test era. Sequence after the
-  npm-test CI step lands.)_
-- **Prune merged claude/* branches on origin (CURSOR, S)** — Delete the 8 merged remote branches
-  (`claude/agent-sync-stanza`, `claude/effort-issues-mirror`, `claude/tokenless-git-dep-prep`,
-  `claude/board-backlog-pass`, `claude/board-effort-sync-refinements`,
-  `claude/effort-sync-rate-limit-hardening`, `claude/effort-sync-review-refinements`,
-  `claude/delegation-standard`) after confirming each is fully merged into origin/main. _(why now:
-  the mechanical batch only deleted the two codex/* branches; the merged claude/* set still
-  clutters origin and makes the branch list unreadable for the next agent triaging what is
-  actually unlanded.)_
-  _2026-07-05 (CLAUDE audit-c3): ABANDONED/HANGING correction — this row UNDERCOUNTS. `git
-  ls-remote` shows `claude/agent-sync-stanza` (#3 MERGED), `board-backlog-pass` (#11),
-  `board-effort-sync-refinements` (#30), `board-nextwave-c2` (#42), `delegation-standard` (#10),
-  `effort-issues-mirror` (#4), `effort-sync-rate-limit-hardening` (#27),
-  `effort-sync-review-refinements` (#29), `tokenless-git-dep-prep` (#7) — all present on origin
-  with MERGED PRs — PLUS `origin/cursor` (see the separate row below). That is 9 claude/* branches
-  + cursor, not 8. action=delete-branch (add `claude/board-nextwave-c2` to the deletion list).
-  [CLAUDE -> CURSOR]._
-- **Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)** — new row,
-  2026-07-05 (CLAUDE audit-c3). `git rev-list origin/main..origin/cursor` = ahead=0 (fully subsumed
-  by v1.3.0 PR #53); `gh` shows PR=null. It is merged work left dangling on origin with no PR
-  record. Safe to delete; fold into the same prune sweep as the merged `claude/*` branches above.
-  action=delete-branch. [CURSOR -> CURSOR].
-- **Correct docs/RELEASE.md consumer list (api-usage-monitor is not a consumer) (CURSOR, S)** —
-  `docs/RELEASE.md` (on the cursor branch) tells releasers to notify Congress.Trade, Agentic
-  Trading, and api-usage-monitor, but API-usage-monitor's `package.json` has no dependency on this
-  package; also document the exact-tag vs semver-range pin split between the two real consumers.
-  _(why now: first tagged release using this new process is imminent (v1.3.0); a wrong consumer
-  list and a missing pin-style note will misdirect the very train it was written for. Can be fixed
-  before/while the cursor branch lands.)_
-- **Unify ticker normalization regex and preferred/depositary symbol helpers (unassigned, S)** —
-  Align the shared `WELL_FORMED_TICKER` pattern in `src/utils.ts` to support carets `^` for preferred share suffixes,
-  and move the depositary serialization/punctuation helpers from Congress.Trade's `tickerNormalize.ts` into the shared package.
-- **Move STOCK Act amount bracket array and snapping/validation helpers to shared (unassigned, S)** —
-  Migrate the `STOCK_ACT_BRACKETS` definitions and its snapping/matching functions (`matchBracket`, `isValidBracket`, `nearestBracket`)
-  from Congress.Trade (`shared/brackets.ts` and `extraction/amounts.ts`) into the shared package to consolidate STOCK Act numeric value parser normalization.
+- ~~**Add a tokenless git-install smoke job to CI (pack + install + CJS/ESM import) (CODEX, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Add vitest coverage reporting with a minimum-threshold gate (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Prune merged claude/* branches on origin (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Correct docs/RELEASE.md consumer list (api-usage-monitor is not a consumer) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Unify ticker normalization regex and preferred/depositary symbol helpers (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Move STOCK Act amount bracket array and snapping/validation helpers to shared (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
 - **Consolidate usage telemetry clients in both consumer apps (unassigned, M)** —
   Refactor Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`) to retire local telemetry definitions and instead
   import the shared `createUsageTelemetryClient` and `UsageTelemetryEventSchema`.
 - **Retire duplicate API client fetchers and stream parser in Socratic.Trade (unassigned, M)** —
   Replace local HTTP wrappers in Socratic.Trade's `congress-trade-client.ts` and SSE parsing in `congress-stream.ts` with the native, strongly-typed
   `CongressTradeClient` and `SseParser` from `@jaywedgeworth22/congress-trading-shared/src/client`.
-- **Align ClientAsset and ClientTrade schemas with actual production API outputs (unassigned, S)** —
-  Update `ClientAssetSchema` in the shared package to include missing API fields (`companyName`, `logoUrl`, `typeName`, `typeCategory`, `typeCategoryLabel`)
-  and extend the `source` validation enum in `ClientTradeSchema` to include `'manual'`.
+- ~~**Align ClientAsset and ClientTrade schemas with actual production API outputs (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
 - **Import snapshot/export types in Congress.Trade (unassigned, S)** —
   Replace locally defined `SnapshotTableInfo` and `SnapshotManifest` interfaces in Congress.Trade's `export/snapshot.ts` with direct imports from the shared package.
 
@@ -250,9 +217,9 @@ _Added by CLAUDE audit-c3 pass. Tags: CURSOR / CODEX / AG / MONET / CLAUDE / OWN
 reservations, not locks — re-negotiate in #agent-sync. NEVER assign to CODEX (quota-capped to
 Jul 8 18:10 CT)._
 
-- **Rebase the 4 open AG PRs onto current main to clear the docs/EFFORT-LOG.md-only conflict and land them (AG, S)** — All of #54/#55/#56/#57 are CI-green but blocked SOLELY by a docs/EFFORT-LOG.md conflict (each rewrote the mirror from base 4c35df2 before main advanced it in f95e151). Code merges clean. Rebase each onto origin/main taking main's EFFORT-LOG.md, then land in stack order #55->#56->#57 (independent #54 anytime). This unblocks net-new src/client.ts, balance/limit metric types, and createCongressEvent in one pass.
-- **Fix misleading commit message on ag/client-and-ticker 81b2fd3 (ticker work came from v1.3.0 base, not this branch) (AG, S)** — Commit 81b2fd3 is titled 'add CongressTradeClient and move ticker alias resolution to shared package' but the branch forked from the v1.3.0 merge, so the rename/acquisition ticker split was already in its base — the branch does NOT move/add ticker resolution. Reword during the rebase to reflect the actual net change (CongressTradeClient + SUBSCRIPTIONS path only) so the history is not misread as duplicate ticker work.
-- **Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)** — origin/cursor is fully subsumed by main (git rev-list origin/main..origin/cursor is empty) and has no PR. Fold it into the merged-branch prune sweep alongside the merged claude/* branches so the branch list is readable.
+- ~~**Rebase the 4 open AG PRs onto current main to clear the docs/EFFORT-LOG.md-only conflict and land them (AG, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Fix misleading commit message on ag/client-and-ticker 81b2fd3 (ticker work came from v1.3.0 base, not this branch) (AG, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
 
 ## Changelog of this log
 - 2026-07-05 — CLAUDE: completed both reserved lanes: stale-main repair (salvage-verified
