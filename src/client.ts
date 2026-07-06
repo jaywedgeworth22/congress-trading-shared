@@ -1,4 +1,4 @@
-import { API_PATHS, DEFAULT_CONGRESS_TRADE_BASE_URL } from "./constants";
+import { API_PATHS, DEFAULT_CONGRESS_TRADE_BASE_URL, MAX_REFS_BATCH } from "./constants";
 import type {
   TransactionsPage,
   TransactionsQuery,
@@ -114,10 +114,17 @@ export class CongressTradeClient {
 
   async getRefs(tickers: string[]): Promise<SecurityRef[]> {
     if (tickers.length === 0) return [];
-    const params = new URLSearchParams();
-    params.set("tickers", tickers.join(","));
-    const data = await this.getJson<{ refs?: SecurityRef[] }>(API_PATHS.MARKET_REFS, params);
-    return Array.isArray(data.refs) ? data.refs : [];
+    const results: SecurityRef[] = [];
+    for (let i = 0; i < tickers.length; i += MAX_REFS_BATCH) {
+      const chunk = tickers.slice(i, i + MAX_REFS_BATCH);
+      const params = new URLSearchParams();
+      params.set("tickers", chunk.join(","));
+      const data = await this.getJson<{ refs?: SecurityRef[] }>(API_PATHS.MARKET_REFS, params);
+      if (data && Array.isArray(data.refs)) {
+        results.push(...data.refs);
+      }
+    }
+    return results;
   }
 
   async getPrices(ticker: string, opts?: { from?: string; to?: string }): Promise<PriceSeries | null> {
@@ -168,6 +175,7 @@ export class CongressTradeClient {
     if (query.chamber) params.set("chamber", query.chamber);
     if (query.type) params.set("type", query.type);
     if (query.limit) params.set("limit", String(query.limit));
+    if (query.order) params.set("order", query.order);
     return this.getJson<TransactionsPage>(API_PATHS.TRANSACTIONS, params);
   }
 
@@ -259,7 +267,7 @@ export class SseParser {
       this.buf = this.buf.slice(nl + 1);
       if (line.endsWith("\r")) line = line.slice(0, -1);
       if (line === "") {
-        if (this.cur.data.length > 0 || this.cur.event !== undefined || this.cur.id !== undefined) {
+        if (this.cur.data.length > 0) {
           out.push({ event: this.cur.event, id: this.cur.id, data: this.cur.data.join("\n") });
         }
         this.cur = { data: [] };
