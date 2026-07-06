@@ -1,12 +1,12 @@
 # AGENTS.md
 
-This repo is the shared TypeScript contract package for Congress.Trade (App A) and Agentic Trading (App B).
+This repo is the shared TypeScript contract package for Congress.Trade (App A) and Socratic Trade (App B, aka Socratic.Trade).
 
 ## Rules
 
 - Check `git status --short --branch` before edits.
 - Preserve unrelated user or agent changes.
-- Treat `/Users/jay/Code/Congress.Trade` and `/Users/jay/Code/Agentic Trading` as read-only evidence unless the user explicitly asks to edit those apps.
+- Treat `/Users/jay/Code/Congress.Trade` and `/Users/jay/Code/Socratic.Trade` as read-only evidence unless the user explicitly asks to edit those apps.
 - Keep this package focused on portable types, Zod schemas, constants, and pure utilities. Do not add app runtime code here.
 - Keep `SecurityRef` as the full read-side shape and `SecurityRefInput` as the partial import/upsert shape.
 - **Publish policy (owner-directed, 2026-07-04): this repo is public and consumers install it as a

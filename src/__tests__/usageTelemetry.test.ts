@@ -9,17 +9,6 @@ import {
 } from "../schemas";
 
 // ---------------------------------------------------------------------------
-// Polyfill crypto.subtle for Node (vitest runs in Node, needs WebCrypto)
-// ---------------------------------------------------------------------------
-import { webcrypto } from "node:crypto";
-
-beforeAll(() => {
-  // Ensure crypto.subtle is available for SHA-256 hashing in tests
-  if (!globalThis.crypto?.subtle) {
-    globalThis.crypto = webcrypto as unknown as Crypto;
-  }
-});
-
 // ---------------------------------------------------------------------------
 // deriveUsageTelemetryIdempotencyKey — contract test vectors
 // ---------------------------------------------------------------------------

@@ -43,6 +43,7 @@ export const UsageTelemetryLimitWindowSchema = z.enum([
 ]);
 
 export const UsageTelemetryMetadataSchema = z.record(
+  z.string(),
   z.union([z.string(), z.number(), z.boolean(), z.null()]),
 );
 

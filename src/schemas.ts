@@ -428,6 +428,31 @@ export const ClientTradeSchema = z.object({
 });
 export type ClientTrade = z.infer<typeof ClientTradeSchema>;
 
+// ---- STOCK Act brackets ----
+
+export const AmountBracketSchema = z.object({
+  min: z.number().finite().nonnegative(),
+  max: z.number().finite().nonnegative().nullable(),
+}).refine((data) => data.max === null || data.max >= data.min, {
+  message: "max must be greater than or equal to min",
+  path: ["max"],
+});
+
+// ---- Subscription (from CongressTradeClient.createSubscription) ----
+
+export const SubscriptionSchema = z.object({
+  id: z.string().min(1),
+  secret: z.string().min(1),
+});
+
+// ---- SSE parser ----
+
+export const SseMessageSchema = z.object({
+  event: z.string().optional(),
+  id: z.string().optional(),
+  data: z.string(),
+});
+
 // ---- Helper: tolerant array parser ----
 
 /**

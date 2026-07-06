@@ -38,6 +38,7 @@ import {
   ClientTradeSchema,
   BundleResponseSchema,
   TransactionsQuerySchema,
+  AmountBracketSchema,
   parseArray,
   parseSafe,
 } from "../schemas";
@@ -1475,5 +1476,36 @@ describe("parseSafe", () => {
   it("returns null for invalid enum", () => {
     const result = parseSafe(ChamberSchema, "congress");
     expect(result).toBeNull();
+  });
+});
+
+// =============================================================================
+// AmountBracketSchema
+// =============================================================================
+
+describe("AmountBracketSchema", () => {
+  it("accepts valid bracket with max > min", () => {
+    const result = AmountBracketSchema.safeParse({ min: 1000, max: 5000 });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts valid bracket with max === min", () => {
+    const result = AmountBracketSchema.safeParse({ min: 1000, max: 1000 });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts valid bracket with max === null", () => {
+    const result = AmountBracketSchema.safeParse({ min: 1000, max: null });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects bracket with max < min (inverted bounds)", () => {
+    const result = AmountBracketSchema.safeParse({ min: 5000, max: 1000 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects negative min", () => {
+    const result = AmountBracketSchema.safeParse({ min: -100, max: 1000 });
+    expect(result.success).toBe(false);
   });
 });
