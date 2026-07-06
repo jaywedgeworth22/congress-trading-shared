@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-07-06
+
+### Added
+- **STOCK Act amount brackets & matching helpers.** Moved `AmountBracket`, `STOCK_ACT_BRACKETS`, `isValidBracket`, and `nearestBracket` from App A into the shared package.
+- **Unified ticker normalize regex & helpers.** Moved preferred share ticker spelling normalizers, share-class punctuation variants, placeholders, and issuer-based preferred normalizers into the shared package.
+- **CI Test Suite & Coverage Thresholds.** Integrated Vitest into GitHub Actions CI pipeline, enforcing strict code coverage minimum thresholds.
+- **CI Tokenless Smoke Install Job.** Added automated verification checking that the built package bundles correctly and is installable directly from GitHub as a git dependency.
+- **Client Zod schema alignment.** Extended `ClientAssetSchema` to validate optional metadata fields (`companyName`, `logoUrl`, `typeName`, `typeCategory`, `typeCategoryLabel`) and support `manual` source enum value in `ClientTradeSchema`.
+
 ## [1.3.0] — 2026-07-05
 
 ### Added
@@ -81,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package prepared for install via `prepare` build script and CI.
 - GitHub Actions CI pipeline (typecheck, build, audit).
 
-[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/jaywedgeworth22/congress-trading-shared/releases/tag/v1.2.0
 [1.1.1]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.1.0...v1.1.1
