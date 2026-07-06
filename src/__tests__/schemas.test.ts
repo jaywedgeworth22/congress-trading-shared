@@ -1126,6 +1126,27 @@ describe("ClientAssetSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("parses valid asset with new optional fields", () => {
+    const result = ClientAssetSchema.safeParse({
+      name: "Apple Inc.",
+      ticker: "AAPL",
+      type: "stock",
+      sector: "Technology",
+      marketCapBucket: "mega",
+      companyName: "Apple Incorporated",
+      logoUrl: "https://logo.com/apple.png",
+      typeName: "Common Stock",
+      typeCategory: "equity",
+      typeCategoryLabel: "Equity",
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.companyName).toBe("Apple Incorporated");
+    expect(result.data?.logoUrl).toBe("https://logo.com/apple.png");
+    expect(result.data?.typeName).toBe("Common Stock");
+    expect(result.data?.typeCategory).toBe("equity");
+    expect(result.data?.typeCategoryLabel).toBe("Equity");
+  });
 });
 
 describe("ClientTransactionSchema", () => {
@@ -1191,6 +1212,46 @@ describe("ClientTradeSchema", () => {
       source: "primary",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("parses a valid client trade with manual source", () => {
+    const result = ClientTradeSchema.safeParse({
+      id: "trade-1",
+      cursor: 42,
+      docId: "doc-1",
+      member: {
+        id: "m1",
+        name: "John Doe",
+        chamber: "house",
+        party: "D",
+        state: "NY",
+        photoUrl: null,
+      },
+      asset: {
+        name: "Apple Inc.",
+        ticker: "AAPL",
+        type: "stock",
+        sector: "Technology",
+        marketCapBucket: "mega",
+      },
+      transaction: {
+        date: "2024-01-15",
+        type: "P",
+        owner: "self",
+        amountMin: 1001,
+        amountMax: 15000,
+        isOption: false,
+      },
+      filing: {
+        filedDate: "2024-01-16",
+        firstSeenAt: "2024-01-16T10:00:00Z",
+        sourceUrl: "https://example.com/doc",
+      },
+      confidence: 0.95,
+      source: "manual",
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.source).toBe("manual");
   });
 
   it("rejects invalid source", () => {

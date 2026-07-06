@@ -390,6 +390,11 @@ export const ClientAssetSchema = z.object({
   type: z.string().nullable(),
   sector: z.string().nullable(),
   marketCapBucket: z.string().nullable(),
+  companyName: z.string().nullable().optional(),
+  logoUrl: z.string().nullable().optional(),
+  typeName: z.string().nullable().optional(),
+  typeCategory: z.string().nullable().optional(),
+  typeCategoryLabel: z.string().nullable().optional(),
 });
 export type ClientAsset = z.infer<typeof ClientAssetSchema>;
 
@@ -419,7 +424,7 @@ export const ClientTradeSchema = z.object({
   transaction: ClientTransactionSchema,
   filing: ClientFilingSchema,
   confidence: z.number(),
-  source: z.enum(["primary", "seed_dataset"]),
+  source: z.enum(["primary", "seed_dataset", "manual"]),
 });
 export type ClientTrade = z.infer<typeof ClientTradeSchema>;
 
