@@ -9,10 +9,13 @@ export function createCongressEvent<T = unknown>(
   data?: T,
   options?: Omit<CongressEvent, "type" | "data">
 ): CongressEvent {
-  return {
+  const event: CongressEvent = {
     type,
-    data,
-    emittedAt: new Date().toISOString(),
+    emittedAt: options?.emittedAt ?? new Date().toISOString(),
     ...options,
   };
+  if (data !== undefined) {
+    event.data = data;
+  }
+  return event;
 }
