@@ -33,6 +33,12 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Retire duplicate API client + stream parser in Socratic.Trade (CURSOR, M) — 2026-07-06.**
+  Replaced local `getJson` wrapper + manual URL construction in `congress-trade-client.ts` and
+  local `SseParser` class in `congress-stream.ts` with `CongressTradeClient` and `SseParser` from
+  shared package. Preserved all business logic (feature gates, health logging, timeouts, symbol
+  normalization, stream management). Bumped shared dep v1.3.3 → v1.4.1. 62 tests, tsc clean.
+  Branch: `cursor/retire-client-dups`.
 - **Codex autofix storm guard (CODEX/AG) — 2026-07-06.** Landed trigger guard instructions inside `.github/workflows/codex-autofix-reusable.yml` instructing calling workflows to only run on pull_request_review:submitted and workflow_dispatch to avoid comment fanning. Branch: `main` (commit `2a754b5`).
 - **Codex Cloud Slack + effort-log readiness across all four apps (CODEX/AG) — 2026-07-06.** Landed setup and maintenance configuration (`.codex/setup.sh`, `.codex/maintenance.sh`), Slack synchronization helper (`scripts/slack-sync.sh`), and updated `AGENTS.md` instructions. Branch: `main` (commit `2a754b5`).
 - **Import snapshot/export types in Congress.Trade from shared package (CURSOR, S) — 2026-07-06.**
@@ -135,13 +141,26 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
-- **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06.**
-  Refactor Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`)
+- **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06, completed 2026-07-06.**
+  Refactored Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`)
   to retire local telemetry definitions and import the shared `createUsageTelemetryClient` and
-  `UsageTelemetryEventSchema`. Branch: `cursor/telemetry-consolidation`.
+  types. Branches: `cursor/telemetry-consolidation` on both repos.
+  - **Socratic.Trade:** replaced local `UsageMonitorEvent` and type aliases with imports from shared.
+    Bumped shared dep from v1.3.3 → v1.4.1. Preserved buffering/flush/health-logging infrastructure.
+    Consumers (`llm-usage.ts`, `rag-metering.ts`, `alpaca.ts`, `robinhood.ts`, `data-providers.ts`,
+    `usage-budget.ts`) continue to import re-exported aliases — zero API breakage.
+    Verified: no telemetry-related tsc errors, 2843 tests pass.
+  - **Congress.Trade:** replaced local `UsageTelemetryEvent` interface and HTTP client with
+    `createUsageTelemetryClient({ baseUrl, token }).send()`. Kept CF-specific secrets resolution
+    (`resolveSecrets`) and `normalizeEvent` wrapper. Test mock updated to match shared response
+    schema (`{ ok, accepted }`). Verified: typecheck clean, 672 tests pass.
 - **Retire duplicate API client fetchers and stream parser in Socratic.Trade (CURSOR, M) — started 2026-07-06.**
-  Replace local HTTP wrappers in `congress-trade-client.ts` and SSE parsing in `congress-stream.ts`
-  with `CongressTradeClient` and `SseParser` from shared package. Branch: `cursor/retire-client-dups`.
+  Replaced local `getJson` wrapper + manual URL construction in `congress-trade-client.ts` and
+  local `SseParser` class in `congress-stream.ts` with `CongressTradeClient` and `SseParser` from
+  shared package. Preserved all business logic (feature gates, health logging, timeouts, symbol
+  normalization, stream management). Bumped shared dep v1.3.3 → v1.4.1. 62 tests, tsc clean.
+  Branch: `cursor/retire-client-dups`.
+  _2026-07-06 (CURSOR): completed — see Completed section._
 - **Import snapshot/export types in Congress.Trade (CURSOR, S) — started 2026-07-06.**
   Replace locally defined `SnapshotTableInfo` and `SnapshotManifest` in `export/snapshot.ts` with
   shared-package imports. Branch: `cursor/snapshot-types`.
@@ -239,7 +258,7 @@ locks — re-negotiate in #agent-sync._
 - **Retire duplicate API client fetchers and stream parser in Socratic.Trade (unassigned, M)** —
   Replace local HTTP wrappers in Socratic.Trade's `congress-trade-client.ts` and SSE parsing in `congress-stream.ts` with the native, strongly-typed
   `CongressTradeClient` and `SseParser` from `@jaywedgeworth22/congress-trading-shared/src/client`.
-  _2026-07-06 (CURSOR): claimed — moved to In Progress. Dispatched mid-tier subagent._
+  _2026-07-06 (CURSOR): completed — moved to Completed._
 - **Import snapshot/export types in Congress.Trade (unassigned, S)** —
   Replace locally defined `SnapshotTableInfo` and `SnapshotManifest` interfaces in Congress.Trade's `export/snapshot.ts` with direct imports from the shared package.
   _2026-07-06 (CURSOR): completed — moved to Completed._
