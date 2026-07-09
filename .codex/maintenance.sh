@@ -6,8 +6,18 @@ cd "$(dirname "$0")/.."
 
 echo "==> Codex Cloud coordination maintenance"
 
-test -f docs/EFFORT-LOG.md && echo "Effort-log mirror: OK" || echo "Effort-log mirror: MISSING"
-test -f scripts/slack-sync.sh && chmod +x scripts/slack-sync.sh && echo "Slack helper: OK" || echo "Slack helper: MISSING"
+if [ -f docs/EFFORT-LOG.md ]; then
+  echo "Effort-log mirror: OK"
+else
+  echo "Effort-log mirror: MISSING"
+fi
+
+if [ -f scripts/slack-sync.sh ]; then
+  chmod +x scripts/slack-sync.sh
+  echo "Slack helper: OK"
+else
+  echo "Slack helper: MISSING"
+fi
 
 if [ -n "${SLACK_BOT_TOKEN:-}" ] && [ -f scripts/slack-sync.sh ]; then
   bash scripts/slack-sync.sh test >/dev/null 2>&1 && echo "Slack bot token: OK" || echo "Slack bot token: check failed"
