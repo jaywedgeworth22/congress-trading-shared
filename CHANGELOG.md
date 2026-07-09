@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] — 2026-07-09
+
+### Added
+- Optional `project` field on `UsageTelemetryEventSchema` for per-project attribution
+  (excluded from the idempotency basis by design).
+- `subscription` value on `UsageTelemetryMetricTypeSchema` so producers can validate
+  recurring fixed-cost events the API Usage Monitor already accepts.
+
 ## [1.4.0] — 2026-07-06
 
 ### Added

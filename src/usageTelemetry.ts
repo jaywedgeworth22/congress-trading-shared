@@ -8,6 +8,10 @@ export const UsageTelemetryMetricTypeSchema = z.enum([
   "health",
   "balance",
   "limit",
+  // Recurring fixed-cost events materialized by the API Usage Monitor
+  // (subscription-materializer). Kept in the shared enum so producers can
+  // validate before send; monitor already accepts this value.
+  "subscription",
 ]);
 
 export const UsageTelemetryUnitSchema = z.enum([
@@ -52,6 +56,10 @@ export const UsageTelemetryEventSchema = z.object({
   environment: z.string().min(1).max(80).optional(),
   provider: z.string().min(1).max(80),
   service: z.string().min(1).max(120).optional(),
+  // Per-project attribution name. Resolved to Project.id on the monitor at
+  // ingest. Deliberately NOT part of the idempotency basis — adding it there
+  // would rekey existing events.
+  project: z.string().min(1).max(120).optional(),
   label: z.string().min(1).max(160).optional(),
   keyRef: z.string().min(1).max(160).optional(),
   billingMode: UsageTelemetryBillingModeSchema.default("estimated"),

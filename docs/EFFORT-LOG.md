@@ -141,6 +141,13 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
+- **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
+  Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
+  `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
+  matches api-usage-monitor. Paired consumer PRs: Congress.Trade (retire brackets/tickerNormalize/
+  analytics/enrichment dups + SharePayload row validation + createCongressEvent), Socratic.Trade
+  (CONGRESS_EVENT_TYPES + SharePayload type + dead imports), api-usage-monitor (restore 5-field
+  idempotency + shared hash vectors). Verified: 338 shared tests pass.
 - **Resolve shared Copilot review findings from PR #125 (CODEX, S) — started 2026-07-08.**
   Patch `scripts/slack-sync.sh`, `.codex/maintenance.sh`, and
   `.github/workflows/codex-autofix-reusable.yml` for the four still-active Copilot review threads
