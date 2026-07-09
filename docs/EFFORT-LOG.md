@@ -141,6 +141,13 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
+- **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
+  Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
+  `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
+  matches api-usage-monitor. Paired consumer PRs: Congress.Trade (retire brackets/tickerNormalize/
+  analytics/enrichment dups + SharePayload row validation + createCongressEvent), Socratic.Trade
+  (CONGRESS_EVENT_TYPES + SharePayload type + dead imports), api-usage-monitor (restore 5-field
+  idempotency + shared hash vectors). Verified: 338 shared tests pass.
 - **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06, completed 2026-07-06.**
   Refactored Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`)
   to retire local telemetry definitions and import the shared `createUsageTelemetryClient` and

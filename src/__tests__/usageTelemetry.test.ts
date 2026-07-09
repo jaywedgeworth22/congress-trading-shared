@@ -500,6 +500,19 @@ describe("schema validation", () => {
       expect(limitResult.success).toBe(true);
     });
 
+    it("accepts subscription metricType and optional project", () => {
+      const result = UsageTelemetryEventSchema.safeParse({
+        ...validEvent,
+        metricType: "subscription",
+        project: "socratic-trade",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.metricType).toBe("subscription");
+        expect(result.data.project).toBe("socratic-trade");
+      }
+    });
+
     it("applies defaults for billingMode and confidence", () => {
       const result = UsageTelemetryEventSchema.safeParse(validEvent);
       expect(result.success).toBe(true);
