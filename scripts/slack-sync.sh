@@ -45,7 +45,9 @@
 # Safety model:
 #   - read / thread NEVER fail hard: on missing arg, network error, or Slack
 #     ok:false they print a note to stderr and exit 0 (hook-safe).
-#   - post / reply exit nonzero on failure so a caller can detect a lost message.
+#   - post / reply exit nonzero on failure when auth is configured so a caller
+#     can detect a lost message. When SLACK_BOT_TOKEN is unset, all subcommands
+#     exit 0 so setup and maintenance hooks remain safe in unprovisioned envs.
 #   - Fetched Slack content (read / thread) is wrapped in a clearly labeled
 #     UNTRUSTED-EXTERNAL-DATA envelope so any agent consuming the output treats the
 #     channel text as data, never as instructions to execute.
@@ -311,9 +313,9 @@ emit_envelope() {
 do_read() {
   _limit="${1:-}"
   if [ -z "$_limit" ]; then
-    # Default fetch. When filtering by TOPIC, pull a wider window first so the
+    # Default fetch. When filtering by project/topic, pull a wider window first so the
     # project's messages are not crowded out of the last-N by other projects.
-    if [ -n "$TOPIC" ]; then _limit="${SLACK_TOPIC_FETCH_LIMIT:-100}"; else _limit="$READ_LIMIT_DEFAULT"; fi
+    if [ -n "$TOPIC" ]; then _limit="${SLACK_PROJECT_FETCH_LIMIT:-${SLACK_TOPIC_FETCH_LIMIT:-100}}"; else _limit="$READ_LIMIT_DEFAULT"; fi
   fi
   case "$_limit" in
     ''|*[!0-9]*) _limit="$READ_LIMIT_DEFAULT" ;;

@@ -141,6 +141,10 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
+- **Resolve shared Copilot review findings from PR #125 (CODEX, S) — started 2026-07-08.**
+  Patch `scripts/slack-sync.sh`, `.codex/maintenance.sh`, and
+  `.github/workflows/codex-autofix-reusable.yml` for the four still-active Copilot review threads
+  on merged PR #125; branch `codex/bot-thread-cleanup`.
 - **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06, completed 2026-07-06.**
   Refactored Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`)
   to retire local telemetry definitions and import the shared `createUsageTelemetryClient` and
