@@ -76,3 +76,9 @@ jobs:
           allowed_bots: ${{ inputs.allowed_bots }}
           prompt: ${{ inputs.prompt }}
           claude_args: ${{ inputs.claude_args }}
+          # claude-code-action's buffered-inline-comment classifier hardcodes
+          # https://api.anthropic.com and reads anthropic_api_key directly,
+          # ignoring ANTHROPIC_BASE_URL — with a DeepSeek key it would 401 and
+          # fall back to posting every buffered comment unfiltered. Disable the
+          # feature rather than rely on a classifier that can't authenticate.
+          classify_inline_comments: "false"
