@@ -33,6 +33,22 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Codex autofix reusable workflow: migrate from Anthropic to DeepSeek (MONET, S)** —
+  COMPLETED 2026-07-10. Merged PR
+  [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`). The
+  Anthropic key funding the shared Codex autofix workflow was deleted, breaking the loop for
+  every caller repo. Renamed the required `workflow_call` secret `ANTHROPIC_API_KEY` →
+  `DEEPSEEK_API_KEY` (`GH_PAT` stays optional) and pointed `anthropics/claude-code-action@v1` at
+  DeepSeek's Anthropic-compatible endpoint via `env.ANTHROPIC_BASE_URL` / `_AUTH_TOKEN` /
+  `_MODEL=deepseek-v4-flash` / `_SMALL_FAST_MODEL`. Codex review caught a real regression:
+  the action's buffered-inline-comment classifier (`post-buffered-inline-comments.ts`) hardcodes
+  `https://api.anthropic.com`, ignoring `ANTHROPIC_BASE_URL` — with a DeepSeek key it would 401
+  and fall back to posting every buffered comment unfiltered. Verified against the action's
+  actual source before fixing; resolved by setting `classify_inline_comments: "false"` rather
+  than relying on a classifier that can't authenticate. Companion caller-side PR
+  [Congress.Trade#258](https://github.com/jaywedgeworth22/Congress.Trade/pull/258) merged and
+  deployed to prod (health-checked OK). If DeepSeek returns "model not found", swap
+  `deepseek-v4-flash` → `deepseek-chat` in `codex-autofix-reusable.yml`.
 - **Retire duplicate API client + stream parser in Socratic.Trade (CURSOR, M) — 2026-07-06.**
   Replaced local `getJson` wrapper + manual URL construction in `congress-trade-client.ts` and
   local `SseParser` class in `congress-stream.ts` with `CongressTradeClient` and `SseParser` from
@@ -141,20 +157,6 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
-- **Codex autofix reusable workflow: migrate from Anthropic to DeepSeek (MONET, S)** — IN
-  PROGRESS 2026-07-10, PR
-  [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) open (unmerged),
-  branch `monet/deepseek-autofix-migration`. The Anthropic key funding the shared Codex autofix
-  workflow was deleted, breaking the loop for every caller repo. Renamed the required
-  `workflow_call` secret `ANTHROPIC_API_KEY` → `DEEPSEEK_API_KEY` (`GH_PAT` stays optional) and
-  pointed `anthropics/claude-code-action@v1` at DeepSeek's Anthropic-compatible endpoint via
-  `env.ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic` / `ANTHROPIC_AUTH_TOKEN` /
-  `ANTHROPIC_MODEL=deepseek-v4-flash` / `ANTHROPIC_SMALL_FAST_MODEL`, feeding
-  `DEEPSEEK_API_KEY` into the `anthropic_api_key` input. Companion caller-side PR
-  [Congress.Trade#258](https://github.com/jaywedgeworth22/Congress.Trade/pull/258) — both must
-  merge together. Next: once merged, dispatch Congress.Trade's autofix once to confirm; swap
-  `deepseek-v4-flash` → `deepseek-chat` if "model not found". KEEPOUT: only touches
-  `.github/workflows/codex-autofix-reusable.yml`.
 - **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
   Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
   `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
