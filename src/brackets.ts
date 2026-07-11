@@ -12,18 +12,18 @@ export interface AmountBracket {
  * The canonical STOCK Act bracket set (ascending). The final tier ($50,000,001+)
  * is open-ended and represented with max === null.
  */
-export const STOCK_ACT_BRACKETS: readonly AmountBracket[] = [
-  { min: 1_001, max: 15_000 },
-  { min: 15_001, max: 50_000 },
-  { min: 50_001, max: 100_000 },
-  { min: 100_001, max: 250_000 },
-  { min: 250_001, max: 500_000 },
-  { min: 500_001, max: 1_000_000 },
-  { min: 1_000_001, max: 5_000_000 },
-  { min: 5_000_001, max: 25_000_000 },
-  { min: 25_000_001, max: 50_000_000 },
-  { min: 50_000_001, max: null },
-] as const;
+export const STOCK_ACT_BRACKETS: readonly AmountBracket[] = Object.freeze([
+  Object.freeze({ min: 1_001, max: 15_000 }),
+  Object.freeze({ min: 15_001, max: 50_000 }),
+  Object.freeze({ min: 50_001, max: 100_000 }),
+  Object.freeze({ min: 100_001, max: 250_000 }),
+  Object.freeze({ min: 250_001, max: 500_000 }),
+  Object.freeze({ min: 500_001, max: 1_000_000 }),
+  Object.freeze({ min: 1_000_001, max: 5_000_000 }),
+  Object.freeze({ min: 5_000_001, max: 25_000_000 }),
+  Object.freeze({ min: 25_000_001, max: 50_000_000 }),
+  Object.freeze({ min: 50_000_001, max: null }),
+]);
 
 /**
  * Return the canonical bracket exactly matching the provided bounds, or null if
@@ -47,14 +47,24 @@ export function isValidBracket(min: number, max: number | null): boolean {
  * nothing plausibly contains the range.
  */
 export function nearestBracket(min: number, max: number | null): AmountBracket | null {
-  const lo = Number.isFinite(min) ? min : 0;
+  if (!Number.isFinite(min) || min < 0) return null;
+  if (max !== null && (!Number.isFinite(max) || max < min)) return null;
+
+  const last = STOCK_ACT_BRACKETS[STOCK_ACT_BRACKETS.length - 1];
+  if (max === null) {
+    // A null maximum means an open-ended range, not an unknown single point.
+    // Accept the common "$50,000,000+" spelling one dollar below the canonical
+    // $50,000,001 lower bound, but never collapse another open range into a
+    // finite bracket.
+    return min >= last.min - 1 ? last : null;
+  }
+
+  const lo = min;
   for (const b of STOCK_ACT_BRACKETS) {
     const top = b.max ?? Number.POSITIVE_INFINITY;
-    const candidateMax = max ?? lo;
-    if (lo >= b.min && candidateMax <= top) return b;
+    if (lo >= b.min && lo <= top && max >= b.min && max <= top) return b;
   }
   // Fall back to the open-ended top tier if the value is very large.
-  const last = STOCK_ACT_BRACKETS[STOCK_ACT_BRACKETS.length - 1];
   if (lo >= last.min) return last;
   return null;
 }

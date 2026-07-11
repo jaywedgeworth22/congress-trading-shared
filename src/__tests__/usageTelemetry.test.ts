@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
+  createUsageTelemetryClient,
   deriveUsageTelemetryIdempotencyKey,
   UsageTelemetryEventSchema,
+  type UsageTelemetryEventInput,
 } from "../usageTelemetry";
 import {
   CongressTransactionSchema,
@@ -486,18 +488,31 @@ describe("schema validation", () => {
       expect(result.success).toBe(false);
     });
 
-    it("accepts new metricTypes balance and limit", () => {
-      const balanceResult = UsageTelemetryEventSchema.safeParse({
-        ...validEvent,
-        metricType: "balance",
-      });
-      expect(balanceResult.success).toBe(true);
+    it.each(["balance", "limit", "quota_sync", "credit_balance"])(
+      "accepts monitor metricType %s",
+      (metricType) => {
+        expect(UsageTelemetryEventSchema.safeParse({ ...validEvent, metricType }).success).toBe(true);
+      },
+    );
 
-      const limitResult = UsageTelemetryEventSchema.safeParse({
+    it("trims identity fields and bounds metadata like the monitor", () => {
+      const metadata = Object.fromEntries(
+        Array.from({ length: 52 }, (_, index) => [` key-${index} `, "x".repeat(510)]),
+      );
+      const result = UsageTelemetryEventSchema.parse({
         ...validEvent,
-        metricType: "limit",
+        sourceApp: " congress-trade ",
+        provider: " cloudflare ",
+        metadata,
       });
-      expect(limitResult.success).toBe(true);
+      expect(result.sourceApp).toBe("congress-trade");
+      expect(result.provider).toBe("cloudflare");
+      expect(Object.keys(result.metadata ?? {})).toHaveLength(50);
+      expect(result.metadata?.["key-0"]).toHaveLength(500);
+    });
+
+    it("rejects whitespace-only required identity fields", () => {
+      expect(UsageTelemetryEventSchema.safeParse({ ...validEvent, provider: "   " }).success).toBe(false);
     });
 
     it("accepts subscription metricType and optional project", () => {
@@ -521,5 +536,85 @@ describe("schema validation", () => {
         expect(result.data.confidence).toBe("estimated");
       }
     });
+  });
+});
+
+describe("createUsageTelemetryClient", () => {
+  it("accepts schema input defaults, derives a key, and returns ignored-pruned counts", async () => {
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
+      JSON.stringify({ ok: true, accepted: 1, ignoredPruned: 2 }),
+      { status: 202, headers: { "content-type": "application/json" } },
+    ));
+    const client = createUsageTelemetryClient({
+      baseUrl: "https://usage.example.test/",
+      token: "secret",
+      fetchImpl: fetchImpl as typeof fetch,
+    });
+    const event: UsageTelemetryEventInput = {
+      sourceApp: "app",
+      provider: "provider",
+      occurredAt: "2026-07-11T00:00:00.000Z",
+    };
+
+    await expect(client.send([event])).resolves.toEqual({ ok: true, accepted: 1, ignoredPruned: 2 });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe("https://usage.example.test/api/ingest/usage");
+    expect(init?.headers).toEqual({ authorization: "Bearer secret", "content-type": "application/json" });
+    const body = JSON.parse(String(init?.body));
+    expect(body.events[0]).toMatchObject({
+      sourceApp: "app",
+      provider: "provider",
+      billingMode: "estimated",
+      metricType: "usage",
+      confidence: "estimated",
+    });
+    expect(body.events[0].idempotencyKey).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("preserves an explicit key and can require caller-supplied identities", async () => {
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
+      JSON.stringify({ ok: true, accepted: 1 }),
+      { status: 202, headers: { "content-type": "application/json" } },
+    ));
+    const client = createUsageTelemetryClient({
+      baseUrl: "https://usage.example.test",
+      token: "secret",
+      requireExplicitIdempotencyKey: true,
+      fetchImpl: fetchImpl as typeof fetch,
+    });
+    const base = { sourceApp: "app", provider: "provider" } satisfies UsageTelemetryEventInput;
+
+    await expect(client.send([base])).rejects.toThrow("requires an explicit idempotencyKey");
+    await expect(client.send([{ ...base, idempotencyKey: "   " }])).rejects.toThrow();
+    expect(fetchImpl).not.toHaveBeenCalled();
+    await client.send([{ ...base, idempotencyKey: "stable-call:prompt" }]);
+    const body = JSON.parse(String(fetchImpl.mock.calls[0][1]?.body));
+    expect(body.events[0].idempotencyKey).toBe("stable-call:prompt");
+  });
+
+  it("surfaces HTTP errors and rejects malformed success payloads", async () => {
+    const failedFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "content-type": "application/json" } },
+    ));
+    const failedClient = createUsageTelemetryClient({
+      baseUrl: "https://usage.example.test",
+      token: "bad",
+      fetchImpl: failedFetch as typeof fetch,
+    });
+    await expect(failedClient.send([{ sourceApp: "app", provider: "provider" }]))
+      .rejects.toThrow("Usage telemetry ingest failed: Unauthorized");
+
+    const malformedFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
+      JSON.stringify({ ok: true }),
+      { status: 202, headers: { "content-type": "application/json" } },
+    ));
+    const malformedClient = createUsageTelemetryClient({
+      baseUrl: "https://usage.example.test",
+      token: "secret",
+      fetchImpl: malformedFetch as typeof fetch,
+    });
+    await expect(malformedClient.send([{ sourceApp: "app", provider: "provider" }])).rejects.toThrow();
   });
 });

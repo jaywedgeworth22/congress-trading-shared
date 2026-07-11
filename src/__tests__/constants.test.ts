@@ -29,8 +29,9 @@ describe("TICKER_ALIASES", () => {
   });
 
   it("is a frozen/readonly object", () => {
-    // The type is Readonly<Record<string, string>>, so TS prevents writes.
-    // Verify the object has the expected shape (test at runtime it's accessible).
+    expect(Object.isFrozen(TICKER_ALIASES)).toBe(true);
+    expect(Object.isFrozen(TICKER_RENAMES)).toBe(true);
+    expect(Object.isFrozen(TICKER_ACQUISITIONS)).toBe(true);
     expect(Object.keys(TICKER_ALIASES)).toHaveLength(7);
   });
 
@@ -288,6 +289,11 @@ describe("LAG_BUCKETS", () => {
 
   it("the last bucket has null max (unbounded)", () => {
     expect(LAG_BUCKETS[LAG_BUCKETS.length - 1].max).toBeNull();
+  });
+
+  it("is deeply frozen at runtime", () => {
+    expect(Object.isFrozen(LAG_BUCKETS)).toBe(true);
+    expect(LAG_BUCKETS.every(Object.isFrozen)).toBe(true);
   });
 });
 

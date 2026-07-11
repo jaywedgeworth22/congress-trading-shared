@@ -42,6 +42,14 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Protect immutable release tags and enable repository-native security controls (CODEX, P1/M).**
+  Active no-bypass tag ruleset `18817304` forbids updates/deletions of `refs/tags/v*` while allowing
+  new releases. Enabled Dependabot alerts/security updates, provider secret scanning and push
+  protection, plus CodeQL default setup for TypeScript/JavaScript and Python; initial CodeQL run
+  `29171961494` completed successfully. Advanced non-provider/validity scanning remains unavailable.
+- **Correct stale GitHub repository identity metadata (CODEX, S) — completed 2026-07-11.**
+  Repository description still named Agentic Trading after the product rename. Updated the live
+  GitHub description to Congress.Trade ↔ Socratic Trade through the repository API.
 - **LICENSE decision for the now-public repo (AG, S) — COMPLETED 2026-07-11.**
   Added MIT License and updated `package.json` license field.
 - **Enable a required-status-check ruleset on main gating on the CI verify job (AG, S) — COMPLETED 2026-07-11.**
@@ -49,22 +57,70 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   Blocked deletion and non-fast-forward pushes.
   Required Pull Requests for `main`.
   Required the `verify` status check to pass.
+  2026-07-11 hardening: require the branch to be current before `verify`, require review-thread
+  resolution, enforce the same strict check in classic branch protection, and retain zero bypasses.
 - **Codex autofix reusable workflow: migrate from Anthropic to DeepSeek (MONET, S)** —
   COMPLETED 2026-07-10. Merged PR
-  [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`). The
-  Anthropic key funding the shared Codex autofix workflow was deleted, breaking the loop for
+  [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`) +
+  docs follow-up [#142](https://github.com/jaywedgeworth22/congress-trading-shared/pull/142).
+  The Anthropic key funding the shared Codex autofix workflow was deleted, breaking the loop for
   every caller repo. Renamed the required `workflow_call` secret `ANTHROPIC_API_KEY` →
   `DEEPSEEK_API_KEY` (`GH_PAT` stays optional) and pointed `anthropics/claude-code-action@v1` at
   DeepSeek's Anthropic-compatible endpoint via `env.ANTHROPIC_BASE_URL` / `_AUTH_TOKEN` /
-  `_MODEL=deepseek-v4-flash` / `_SMALL_FAST_MODEL`. Codex review caught a real regression:
-  the action's buffered-inline-comment classifier (`post-buffered-inline-comments.ts`) hardcodes
-  `https://api.anthropic.com`, ignoring `ANTHROPIC_BASE_URL` — with a DeepSeek key it would 401
-  and fall back to posting every buffered comment unfiltered. Verified against the action's
-  actual source before fixing; resolved by setting `classify_inline_comments: "false"` rather
-  than relying on a classifier that can't authenticate. Companion caller-side PR
+  `_MODEL=deepseek-v4-flash` / `_SMALL_FAST_MODEL`. Codex review caught a real regression: the
+  action's buffered-inline-comment classifier hardcodes `https://api.anthropic.com`, ignoring
+  `ANTHROPIC_BASE_URL` — with a DeepSeek key it would 401 and fall back to posting every
+  buffered comment unfiltered. Verified against the action's actual source before fixing;
+  resolved via `classify_inline_comments: "false"` rather than trusting a classifier that can't
+  authenticate. Companion caller-side PR
   [Congress.Trade#258](https://github.com/jaywedgeworth22/Congress.Trade/pull/258) merged and
   deployed to prod (health-checked OK). If DeepSeek returns "model not found", swap
-  `deepseek-v4-flash` → `deepseek-chat` in `codex-autofix-reusable.yml`.
+  `deepseek-v4-flash` → `deepseek-chat`.
+- **Resolve shared Copilot review findings from PR #125 (CODEX, S) — started 2026-07-08.**
+  PR #137 merged to `main`, resolving the four still-active Copilot review threads from merged
+  PR #125. Patched `scripts/slack-sync.sh`, `.codex/maintenance.sh`, and
+  `.github/workflows/codex-autofix-reusable.yml`. Verified shell syntax, workflow YAML,
+  no-token maintenance/helper behavior, `npm ci`, `npm run typecheck`, `npm test` (337 passed),
+  `npm run build`, and `git diff --check`.
+### Historical state reconciliation — 2026-07-11
+
+The following first lines are repeated unchanged so legacy issue keys resolve to a terminal section.
+Original rows remain in place for provenance; the mirror de-duplicates by key and uses this earlier
+Completed occurrence.
+
+- **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06, completed 2026-07-06.**
+  Reconciled from stale In Progress; consumer receipts remain on the original row.
+- **Retire duplicate API client fetchers and stream parser in Socratic.Trade (CURSOR, M) — started 2026-07-06.**
+  Reconciled from stale In Progress; completed receipt already exists above.
+- **Import snapshot/export types in Congress.Trade (CURSOR, S) — started 2026-07-06.**
+  Reconciled from stale In Progress; completed receipt already exists above.
+- **✅ DEPLOYED 2026-07-05 as v1.3.0 (PR #53 merged `4c35df2` + tag `v1.3.0`) — see the Deployed
+  Reconciled from stale In Progress; the canonical release receipt remains in Deployed.
+- **Split `TICKER_ALIASES` into rename-vs-acquisition classes — SHARED-LIBRARY PORTION (MONET,
+  Reconciled from stale In Progress; shared portion shipped in v1.3.0.
+- Codex global coordination + fleet monitoring setup (Codex, shared `/Users/jay/apps`
+  Reconciled from stale In Progress; landed in commit `2a754b5`.
+- ~~**Repair the stale Mac clone `main` (CLAUDE, S)** — local `main` diverged (7 dead WIP commits,
+  Reconciled from stale Planned; the completed repair receipt remains above.
+- ~~**Add npm test to the CI verify job in ci.yml (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- **Run the v1.3.0 release train: land cursor stack, land monet split, tag, bump consumers
+  Reconciled from stale Planned; v1.3.0 was tagged and adopted.
+- ~~**Add a tokenless git-install smoke job to CI (pack + install + CJS/ESM import) (CODEX, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Add vitest coverage reporting with a minimum-threshold gate (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Prune merged claude/* branches on origin (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Correct docs/RELEASE.md consumer list (api-usage-monitor is not a consumer) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Unify ticker normalization regex and preferred/depositary symbol helpers (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Move STOCK Act amount bracket array and snapping/validation helpers to shared (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
+- **Consolidate usage telemetry clients in both consumer apps (unassigned, M)** —
+  Reconciled from stale Planned; the completed implementation receipt remains above.
+- **Retire duplicate API client fetchers and stream parser in Socratic.Trade (unassigned, M)** —
+  Reconciled from stale Planned; the completed implementation receipt remains above.
+- **Import snapshot/export types in Congress.Trade (unassigned, S)** —
+  Reconciled from stale Planned; the completed implementation receipt remains above.
+- ~~**Rebase the 4 open AG PRs onto current main to clear the docs/EFFORT-LOG.md-only conflict and land them (AG, S)**~~ — _Moved to Completed 2026-07-06._
+- ~~**Fix misleading commit message on ag/client-and-ticker 81b2fd3 (ticker work came from v1.3.0 base, not this branch) (AG, S)**~~ — _Moved to Completed 2026-07-06._
+
 - **Retire duplicate API client + stream parser in Socratic.Trade (CURSOR, M) — 2026-07-06.**
   Replaced local `getJson` wrapper + manual URL construction in `congress-trade-client.ts` and
   local `SseParser` class in `congress-stream.ts` with `CongressTradeClient` and `SseParser` from
@@ -173,6 +229,133 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
+- **Whole-package shared dependency audit and remediation (CODEX, L) — started 2026-07-11.**
+  Branch `codex/shared-dependency-audit-20260711`; audit portable-contract correctness,
+  package/export/install compatibility, CI/release/security hygiene, documentation/board truth,
+  and read-only integration evidence in Congress.Trade and Socratic.Trade. Substantiated findings
+  become distinct rows before fixes; consumer repositories remain read-only.
+- **Reject inverted STOCK Act ranges before canonical bracket snapping (CODEX, P0/S).**
+  `nearestBracket(16_000, 14_000)` currently returns the `$1,001-$15,000` bracket because it
+  checks the guessed maximum against a tier ceiling without checking that the minimum is below
+  that ceiling or that `max >= min`. Congress.Trade extraction calls this helper, so reversed OCR
+  ranges can be marked exact and persisted as the wrong disclosure amount. Add invalid/non-finite
+  guards and adversarial regression cases.
+- **Align shared query and telemetry schemas with the live producer contracts (CODEX, P1/M).**
+  `TransactionsQuerySchema.since` validates an ISO date even though Congress.Trade defines it as a
+  monotonic numeric cursor; shared telemetry also rejects server-supported status metric types.
+  Audit current-origin nullability for market/enrichment payloads, correct the portable schemas,
+  and add direct client/schema tests before widening exported types.
+- **Make CongressTradeClient runtime results match its exported types (CODEX, P1/L).**
+  The client casts arbitrary JSON and shallow-checks only a few arrays, so malformed refs, prices,
+  transactions, subscriptions, and analytics rows are returned under trusted types; `getRef` also
+  throws on a normal 404 despite returning `SecurityRef | null`. After producer/read schemas align,
+  parse every endpoint envelope, normalize scoped rows, add missing insider/short-volume methods,
+  and cover malformed/404/nullable responses directly.
+- **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
+  Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
+  responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
+  the shared client promises. Keep `SecurityRef` as the full read-side shape; add safe client-side
+  normalization where backward-compatible and route the producer mapping fix to the Congress.Trade
+  owner without editing that consumer from this repository lane.
+- **Consolidate drifted transaction and client/PWA read contracts (cross-app, P2/M).**
+  Shared transaction schemas omit producer fields such as confidence/source/createdAt/cursorSeq and
+  route-added chamber/memberName; `ClientTransactionSchema` omits emitted `estValue`, while the
+  Congress PWA duplicates the full shape locally. Expand portable read contracts without weakening
+  import schemas, then route producer typing/PWA adoption to Congress.Trade.
+- **Choose a supported authenticated SSE subscription-provisioning flow (cross-app, P1/M).**
+  Socratic.Trade auto-subscribe calls the shared client with no auth while Congress.Trade now requires
+  an end-user session and ignores the posted `clientId`, so the advertised mode always gets HTTP 401.
+  Keep credentials/auth enforcement app-local; coordinate removal of auto mode or a scoped M2M
+  provisioning design, then update shared client docs/signature to match the chosen contract.
+  Also expose the required per-subscription stream secret in `streamUrl` for EventSource callers;
+  preserve the existing bearer-header path used by Socratic.Trade.
+- **Make exact-pin drift checks tokenless, symmetric, and fail-closed (cross-app, P1/M).**
+  Current consumer workflows either compare only package specs or require the retired package token,
+  then skip on missing credentials/peer fetch errors. Both repos are public exact-tag consumers.
+  Route a shared reusable lock-SHA/tag check that needs no package token and fails on peer drift.
+- **Require stable telemetry identities for multi-lane same-timestamp events (cross-app, P1/M).**
+  The five-field fallback intentionally ignores service/label/project/quantity/unit and returns no
+  client key without `occurredAt`; the monitor then assigns a random UUID. Congress prompt and
+  completion telemetry currently lacks both stable inputs. Preserve the byte-compatible basis,
+  add an opt-in explicit-key guard/helper and collision documentation, and route producer-specific
+  stable keys to Congress.Trade.
+- **Remove retired GitHub Packages auth from Congress.Trade cloud bootstrap (cross-app, P2/S).**
+  Congress.Trade still appends registry credentials to `$HOME/.npmrc` and warns installs need a token,
+  contradicting this package's public tokenless-Git policy. Consumer owner must delete the obsolete
+  auth block and verify setup from a clean home; this lane remains read-only there.
+- **Resolve the dual-Zod public-schema boundary introduced in a patch release (CODEX, P1/M).**
+  v1.4.1 changed exported schema runtime/types from Zod 3 to Zod 4 under a patch version. Current
+  Socratic.Trade uses root Zod 3 while the shared Git dependency installs nested Zod 4, so schema
+  composition/type assignability crosses two major instances. Document the missed breaking-risk,
+  add a compatibility matrix, and choose a tested peer/dependency strategy before the next tag.
+- **Preserve SSE resume IDs and non-erasable event timestamps (CODEX, P1/S).**
+  `SseParser` resets the last event ID after every frame even though SSE IDs persist until replaced,
+  and `createCongressEvent(..., { emittedAt: undefined })` erases its automatic timestamp. Fix both
+  pure utilities with focused compatibility tests.
+- **Align analytics endpoint schemas with production rows (CODEX, P2/M).**
+  Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
+  nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
+  normalized fields and endpoint-envelope tests without inventing app runtime logic.
+- **Validate event envelopes and freeze exported readonly constants at runtime (CODEX, P2/S).**
+  `CongressEventSchema` accepts blank types/IDs, fractional or negative sequences, and invalid
+  timestamps. Exported alias maps/bracket arrays are TypeScript-readonly but mutable at runtime,
+  allowing one consumer mutation to change later resolution globally. Tighten portable validation,
+  preserve unknown nonblank event types, deep-freeze shared constants, and add mutation tests.
+- **Disambiguate open-ended STOCK Act ranges from unknown single values (CODEX/cross-app, P1/S).**
+  `AmountBracket.max === null` means an unbounded top tier, but `nearestBracket(1_001, null)`
+  collapsed it into a finite tier. Reject non-top open ranges in the portable helper. Congress.Trade
+  also has a pre-helper `snapToBracket` loop that repeats the false snap; route that consumer-owned
+  correction without editing its repository from this lane.
+- **Make security-ref ticker limits round-trip between import and read contracts (CODEX, P1/S).**
+  `SecurityRefInputSchema` accepted 20-character tickers that `SecurityRefSchema` later rejected at
+  10, so a valid import could make strict ref/bundle reads fail. Preserve the full-vs-partial shape
+  distinction while aligning both ticker limits at 20 and add a round-trip regression test.
+- **Require transaction read provenance and preserve live additive fields (CODEX, P1/S).**
+  The REST producer always supplies `confidence`, `source`, `createdAt`, and resume-critical
+  `cursorSeq`, but the shared page accepted rows without them and stripped top-level `estValue`.
+  Add a full `CongressTransactionReadSchema` for pages while keeping the general event shape
+  backward-compatible; test missing cursor provenance and a non-empty client response.
+- **Bound incremental SSE parser memory on malformed streams (CODEX, P2/S).**
+  An unterminated line or event could grow the parser buffer/data array indefinitely. Add validated,
+  configurable line/event limits that reset and throw, with recovery and oversized-frame tests.
+- **Correct conditional declarations and the supported Node type floor (CODEX, P1/S).**
+  The package emitted `.d.mts` but routed ESM and CJS through `.d.ts`, which `publint` flags as
+  ambiguous; it also advertised Node 20 while compiling against Node 26 types. Split conditional
+  type exports, declare the package type, align `@types/node` to 20, and make `publint` plus strict
+  NodeNext/Bundler consumer fixtures merge-blocking.
+- **Make install/release CI exercise the supported tokenless Git path and block merges (CODEX, P1/M).**
+  The separate `smoke-install` job tests a local tarball, not `npm install` from the public Git ref,
+  and only `verify` is required by branch protection. Also pin secret-bearing third-party action
+  references to immutable full SHAs. Preserve the required `verify` context while making Git
+  `prepare`/CJS/ESM/type resolution failures merge-blocking. Raise the low 60/40/50/65 coverage
+  floors toward the current 92/84/91/95 baseline and add currently absent client HTTP tests.
+- **Prevent accidental registry publication and document the prepare-script requirement (CODEX, P2/S).**
+  Policy forbids npm publishing but package metadata has no `private`/prepublish guard. Git installs
+  also produce no runtime files when lifecycle scripts are disabled because `dist/` is generated by
+  `prepare`. Add a tested publish guard and make the lifecycle requirement/scratch verification
+  explicit rather than telling operators to delete a consumer lockfile in place.
+- **Align TypeScript map settings with the published artifact (CODEX, P3/S).**
+  `tsconfig.json` enables source and declaration maps, but tsup emits/packages neither. Either enable
+  verified maps in the build or remove the misleading compiler settings so release contents match
+  declared intent.
+- **Correct the filing-lag overflow bucket boundary (CODEX, P2/S).**
+  `LAG_BUCKETS` assigns day 60 to `46-60d` and day 61 onward to a bucket labelled `60d+`, producing
+  overlapping display semantics in Congress.Trade analytics. Do not silently rename it in shared:
+  consumer tests and warning styles key on `60d+`. Preserve compatibility and route a coordinated
+  consumer/UI migration or boundary decision before changing the public label.
+- **Repair released-package metadata drift and cut an immutable SemVer-minor release (CODEX, P1/M).**
+  Both consumers resolve `v1.5.0` at `2222baeb`, where `package.json` still says `UNLICENSED` and
+  no LICENSE file exists; `main` now contains MIT metadata while still reporting version 1.5.0.
+  The root lock still says `UNLICENSED`, v1.4.2 is documented/versioned but was never tagged, and
+  several real release sections/links are missing. Do not move existing tags: sync metadata, record
+  historical truth, bump after fixes, clean-install the exact ref without registry tokens, and
+  publish a new immutable tag at the matching package version.
+- **Reconcile stale effort state and orphaned GitHub issue mirrors (CODEX, P1/M; fleet follow-up).**
+  The live board and repo mirror diverge, completed rows remain under In Progress/Planned, and the
+  mirror script intentionally leaves renamed/removed effort keys open forever. Latest sync is green
+  while dozens of already-merged/released items remain open. Preserve peer rows, correct their
+  sections with receipts, close orphaned mirror issues deterministically, and socialize verbatim
+  script propagation to the other app repos.
 - **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
   Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
   `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
@@ -180,10 +363,9 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   analytics/enrichment dups + SharePayload row validation + createCongressEvent), Socratic.Trade
   (CONGRESS_EVENT_TYPES + SharePayload type + dead imports), api-usage-monitor (restore 5-field
   idempotency + shared hash vectors). Verified: 338 shared tests pass.
-- **Resolve shared Copilot review findings from PR #125 (CODEX, S) — started 2026-07-08.**
-  Patch `scripts/slack-sync.sh`, `.codex/maintenance.sh`, and
-  `.github/workflows/codex-autofix-reusable.yml` for the four still-active Copilot review threads
-  on merged PR #125; branch `codex/bot-thread-cleanup`.
+
+## Archived provenance — terminal rows reconciled above
+
 - **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06, completed 2026-07-06.**
   Refactored Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`)
   to retire local telemetry definitions and import the shared `createUsageTelemetryClient` and
@@ -258,6 +440,9 @@ reservations, not locks — re-negotiate in #agent-sync._
   _2026-07-05 (MONET): shared-library portion picked up under owner direction — see In Progress
   (`monet/sad-hermann-671f4d`). Remaining AG scope after that lands = consumer migration only
   (Congress.Trade + Socratic.Trade). AG: ping in #agent-sync if you'd already started; I'll yield/dedup._
+
+## Archived provenance — terminal rows reconciled above
+
 - ~~**Repair the stale Mac clone `main` (CLAUDE, S)** — local `main` diverged (7 dead WIP commits,
   missing 12 origin commits incl. v1.2.0); salvage-check the WIP commits, then fast-forward. Not a
   blind reset.~~ _2026-07-05 (CLAUDE): moved to In Progress._

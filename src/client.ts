@@ -1,5 +1,6 @@
 import { API_PATHS, DEFAULT_CONGRESS_TRADE_BASE_URL, MAX_REFS_BATCH } from "./constants";
 import type {
+  BundleResponse,
   TransactionsPage,
   TransactionsQuery,
   PriceClose,
@@ -7,6 +8,8 @@ import type {
   SecurityRef,
   FundamentalRow,
   AnalystRow,
+  InsiderReadRow,
+  ShortVolumeReadRow,
   TickerLeader,
   ClusterBuy,
   MemberLeader,
@@ -15,6 +18,60 @@ import type {
   TickerBacktest,
   CommitteeConflict,
 } from "./types";
+import {
+  AnalystRowSchema,
+  BundleResponseSchema,
+  ClusterBuySchema,
+  CommitteeConflictSchema,
+  ConvictionTickerSchema,
+  FundamentalRowSchema,
+  InsiderReadRowSchema,
+  MemberLeaderSchema,
+  MemberPerformanceSchema,
+  PriceCloseSchema,
+  PriceSeriesSchema,
+  SecurityRefSchema,
+  ShortVolumeReadRowSchema,
+  SubscriptionSchema,
+  TickerBacktestSchema,
+  TickerLeaderSchema,
+  TransactionsQuerySchema,
+  TransactionsPageSchema,
+} from "./schemas";
+import { z } from "zod";
+
+const RawRefEnvelopeSchema = z.object({ ref: z.unknown().nullable() });
+const RawRefsEnvelopeSchema = z.object({ refs: z.array(z.unknown()) });
+const ClosesEnvelopeSchema = z.object({ closes: z.array(PriceCloseSchema) });
+const UnknownRowsEnvelopeSchema = z.object({
+  ticker: z.string().optional(),
+  rows: z.array(z.unknown()),
+});
+
+function parseResponse<T>(schema: z.ZodType<T>, value: unknown, label: string): T {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    throw new Error(`Invalid ${label} response: ${result.error.message}`);
+  }
+  return result.data;
+}
+
+function normalizeSecurityRef(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const ref = value as Record<string, unknown>;
+  return "sharesOutstanding" in ref ? ref : { ...ref, sharesOutstanding: null };
+}
+
+export class CongressTradeHttpError extends Error {
+  constructor(
+    public readonly method: string,
+    public readonly path: string,
+    public readonly status: number,
+  ) {
+    super(`Request failed: ${method} ${path} -> HTTP ${status}`);
+    this.name = "CongressTradeHttpError";
+  }
+}
 
 export interface CongressTradeClientConfig {
   baseUrl?: string;
@@ -25,6 +82,7 @@ export interface CongressTradeClientConfig {
 export interface Subscription {
   id: string;
   secret: string;
+  streamUrl?: string;
 }
 
 export class CongressTradeClient {
@@ -55,18 +113,26 @@ export class CongressTradeClient {
       cache: "no-store",
     });
     if (!res.ok) {
-      throw new Error(`Request failed: GET ${path} -> HTTP ${res.status}`);
+      throw new CongressTradeHttpError("GET", path, res.status);
     }
     return (await res.json()) as T;
   }
 
+  /**
+   * Create an SSE subscription on behalf of an already-authenticated end user.
+   * Current Congress.Trade derives ownership from the user session and ignores
+   * `clientId`; the field remains on the wire for compatibility with older servers.
+   */
   async createSubscription(clientId: string, desiredSecret?: string): Promise<Subscription> {
     const body: Record<string, string> = { delivery: "sse", clientId };
-    if (desiredSecret && desiredSecret.length >= 16) {
+    if (desiredSecret !== undefined) {
+      if (desiredSecret.length < 16 || desiredSecret.length > 256) {
+        throw new RangeError("desired subscription secret must be 16-256 characters");
+      }
       body.secret = desiredSecret;
     }
 
-    const res = await this.fetchApi(`${this.baseUrl}/api/subscriptions`, {
+    const res = await this.fetchApi(`${this.baseUrl}${API_PATHS.SUBSCRIPTIONS}`, {
       method: "POST",
       headers: this.headers(),
       body: JSON.stringify(body),
@@ -74,42 +140,49 @@ export class CongressTradeClient {
     });
 
     if (!res.ok) {
-      throw new Error(`subscription create failed: HTTP ${res.status}`);
+      throw new CongressTradeHttpError("POST", API_PATHS.SUBSCRIPTIONS, res.status);
     }
 
-    const data = (await res.json()) as { id?: string; secret?: string };
-    if (!data.id || !data.secret) {
-      throw new Error("subscription create returned no id/secret");
-    }
-
-    return { id: data.id, secret: data.secret };
+    return parseResponse(SubscriptionSchema, await res.json(), "subscription create");
   }
 
-  streamUrl(subscriptionId: string): string {
-    return `${this.baseUrl}${API_PATHS.STREAM}?subscription=${encodeURIComponent(subscriptionId)}`;
+  /**
+   * Build an SSE URL. Pass the per-subscription secret for EventSource-style
+   * clients; callers that omit it must send the same secret as a Bearer header.
+   */
+  streamUrl(subscriptionId: string, secret?: string): string {
+    const params = new URLSearchParams({ subscription: subscriptionId });
+    if (secret !== undefined) params.set("token", secret);
+    return `${this.baseUrl}${API_PATHS.STREAM}?${params.toString()}`;
   }
 
   async getBundle(
     ticker: string,
     opts?: { from?: string; to?: string }
-  ): Promise<{ ref: SecurityRef | null; prices: PriceSeries | null; spx: PriceClose[] }> {
+  ): Promise<BundleResponse> {
     const params = new URLSearchParams();
     if (opts?.from) params.set("from", opts.from);
     if (opts?.to) params.set("to", opts.to);
-    const data = await this.getJson<{ ref?: SecurityRef | null; prices?: PriceSeries | null; spx?: PriceClose[] }>(
+    const data = await this.getJson<Record<string, unknown>>(
       `${API_PATHS.MARKET_BUNDLE}/${encodeURIComponent(ticker)}`,
       params
     );
-    return {
-      ref: data.ref ?? null,
-      prices: data.prices ?? null,
-      spx: Array.isArray(data.spx) ? data.spx : [],
-    };
+    return parseResponse(BundleResponseSchema, {
+      ...data,
+      ref: normalizeSecurityRef(data.ref),
+    }, "market bundle");
   }
 
   async getRef(ticker: string): Promise<SecurityRef | null> {
-    const data = await this.getJson<{ ref?: SecurityRef | null }>(`${API_PATHS.MARKET_REF}/${encodeURIComponent(ticker)}`);
-    return data.ref ?? null;
+    const path = `${API_PATHS.MARKET_REF}/${encodeURIComponent(ticker)}`;
+    try {
+      const data = parseResponse(RawRefEnvelopeSchema, await this.getJson<unknown>(path), "market ref envelope");
+      if (data.ref === null) return null;
+      return parseResponse(SecurityRefSchema, normalizeSecurityRef(data.ref), "market ref");
+    } catch (error) {
+      if (error instanceof CongressTradeHttpError && error.status === 404) return null;
+      throw error;
+    }
   }
 
   async getRefs(tickers: string[]): Promise<SecurityRef[]> {
@@ -119,104 +192,177 @@ export class CongressTradeClient {
       const chunk = tickers.slice(i, i + MAX_REFS_BATCH);
       const params = new URLSearchParams();
       params.set("tickers", chunk.join(","));
-      const data = await this.getJson<{ refs?: SecurityRef[] }>(API_PATHS.MARKET_REFS, params);
-      if (data && Array.isArray(data.refs)) {
-        results.push(...data.refs);
-      }
+      const data = parseResponse(
+        RawRefsEnvelopeSchema,
+        await this.getJson<unknown>(API_PATHS.MARKET_REFS, params),
+        "market refs envelope",
+      );
+      results.push(...data.refs.map((ref) => parseResponse(
+        SecurityRefSchema,
+        normalizeSecurityRef(ref),
+        "market ref",
+      )));
     }
     return results;
   }
 
-  async getPrices(ticker: string, opts?: { from?: string; to?: string }): Promise<PriceSeries | null> {
+  async getPrices(ticker: string, opts?: { from?: string; to?: string }): Promise<PriceSeries> {
     const params = new URLSearchParams();
     if (opts?.from) params.set("from", opts.from);
     if (opts?.to) params.set("to", opts.to);
-    const data = await this.getJson<PriceSeries>(`${API_PATHS.MARKET_PRICES}/${encodeURIComponent(ticker)}`, params);
-    return data && Array.isArray(data.closes) ? data : null;
+    const data = await this.getJson<unknown>(`${API_PATHS.MARKET_PRICES}/${encodeURIComponent(ticker)}`, params);
+    return parseResponse(PriceSeriesSchema, data, "market prices");
   }
 
   async getSpx(opts?: { from?: string; to?: string }): Promise<PriceClose[]> {
     const params = new URLSearchParams();
     if (opts?.from) params.set("from", opts.from);
     if (opts?.to) params.set("to", opts.to);
-    const data = await this.getJson<{ closes?: PriceClose[] }>(API_PATHS.MARKET_SPX, params);
-    return Array.isArray(data.closes) ? data.closes : [];
+    const data = await this.getJson<unknown>(API_PATHS.MARKET_SPX, params);
+    return parseResponse(ClosesEnvelopeSchema, data, "SPX prices").closes;
   }
 
   async getFundamentals(ticker: string, opts?: { from?: string; to?: string }): Promise<FundamentalRow[]> {
     const params = new URLSearchParams();
     if (opts?.from) params.set("from", opts.from);
     if (opts?.to) params.set("to", opts.to);
-    const data = await this.getJson<{ rows?: FundamentalRow[] }>(
+    const data = await this.getJson<unknown>(
       `${API_PATHS.MARKET_FUNDAMENTALS}/${encodeURIComponent(ticker)}`,
       params
     );
-    return Array.isArray(data.rows) ? data.rows : [];
+    const envelope = parseResponse(UnknownRowsEnvelopeSchema, data, "market fundamentals");
+    const rowTicker = envelope.ticker ?? ticker.toUpperCase();
+    return envelope.rows.map((row) => parseResponse(
+      FundamentalRowSchema,
+      { ...(row && typeof row === "object" ? row : {}), ticker: rowTicker },
+      "fundamental row",
+    ));
   }
 
   async getAnalyst(ticker: string, opts?: { from?: string; to?: string }): Promise<AnalystRow[]> {
     const params = new URLSearchParams();
     if (opts?.from) params.set("from", opts.from);
     if (opts?.to) params.set("to", opts.to);
-    const data = await this.getJson<{ rows?: AnalystRow[] }>(
+    const data = await this.getJson<unknown>(
       `${API_PATHS.MARKET_ANALYST}/${encodeURIComponent(ticker)}`,
       params
     );
-    return Array.isArray(data.rows) ? data.rows : [];
+    const envelope = parseResponse(UnknownRowsEnvelopeSchema, data, "market analyst");
+    const rowTicker = envelope.ticker ?? ticker.toUpperCase();
+    return envelope.rows.map((row) => parseResponse(
+      AnalystRowSchema,
+      { ...(row && typeof row === "object" ? row : {}), ticker: rowTicker },
+      "analyst row",
+    ));
+  }
+
+  async getInsider(ticker: string, opts?: { from?: string; to?: string }): Promise<InsiderReadRow[]> {
+    const params = new URLSearchParams();
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    const envelope = parseResponse(
+      UnknownRowsEnvelopeSchema,
+      await this.getJson<unknown>(`${API_PATHS.MARKET_INSIDER}/${encodeURIComponent(ticker)}`, params),
+      "market insider",
+    );
+    const rowTicker = envelope.ticker ?? ticker.toUpperCase();
+    return envelope.rows.map((row) => parseResponse(
+      InsiderReadRowSchema,
+      { ...(row && typeof row === "object" ? row : {}), ticker: rowTicker },
+      "insider row",
+    ));
+  }
+
+  async getShortVolume(ticker: string, opts?: { from?: string; to?: string }): Promise<ShortVolumeReadRow[]> {
+    const params = new URLSearchParams();
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    const envelope = parseResponse(
+      UnknownRowsEnvelopeSchema,
+      await this.getJson<unknown>(`${API_PATHS.MARKET_SHORT_VOLUME}/${encodeURIComponent(ticker)}`, params),
+      "market short volume",
+    );
+    const rowTicker = envelope.ticker ?? ticker.toUpperCase();
+    return envelope.rows.map((row) => parseResponse(
+      ShortVolumeReadRowSchema,
+      { ...(row && typeof row === "object" ? row : {}), ticker: rowTicker },
+      "short-volume row",
+    ));
   }
 
   async getTransactions(query: TransactionsQuery = {}): Promise<TransactionsPage> {
+    const parsedQuery = TransactionsQuerySchema.parse(query);
     const params = new URLSearchParams();
-    if (query.since) params.set("since", query.since);
-    if (query.from) params.set("from", query.from);
-    if (query.to) params.set("to", query.to);
-    if (query.ticker) params.set("ticker", query.ticker);
-    if (query.member) params.set("member", query.member);
-    if (query.chamber) params.set("chamber", query.chamber);
-    if (query.type) params.set("type", query.type);
-    if (query.limit) params.set("limit", String(query.limit));
-    if (query.order) params.set("order", query.order);
-    return this.getJson<TransactionsPage>(API_PATHS.TRANSACTIONS, params);
+    if (parsedQuery.since !== undefined) params.set("since", String(parsedQuery.since));
+    if (parsedQuery.from) params.set("from", parsedQuery.from);
+    if (parsedQuery.to) params.set("to", parsedQuery.to);
+    if (parsedQuery.ticker) params.set("ticker", parsedQuery.ticker);
+    if (parsedQuery.member) params.set("member", parsedQuery.member);
+    if (parsedQuery.chamber) params.set("chamber", parsedQuery.chamber);
+    if (parsedQuery.type) params.set("type", parsedQuery.type);
+    if (parsedQuery.limit) params.set("limit", String(parsedQuery.limit));
+    if (parsedQuery.order) params.set("order", parsedQuery.order);
+    return parseResponse(
+      TransactionsPageSchema,
+      await this.getJson<unknown>(API_PATHS.TRANSACTIONS, params),
+      "transactions",
+    );
   }
 
   async getTickerLeaderboard(opts: { window?: string; limit?: number } = {}): Promise<TickerLeader[]> {
     const params = new URLSearchParams();
     if (opts.window) params.set("window", opts.window);
     if (opts.limit) params.set("limit", String(opts.limit));
-    const data = await this.getJson<{ tickers?: TickerLeader[] }>(API_PATHS.ANALYTICS_TICKER_LEADERBOARD, params);
-    return Array.isArray(data.tickers) ? data.tickers : [];
+    return parseResponse(
+      z.object({ tickers: z.array(TickerLeaderSchema) }),
+      await this.getJson<unknown>(API_PATHS.ANALYTICS_TICKER_LEADERBOARD, params),
+      "ticker leaderboard",
+    ).tickers;
   }
 
   async getClusterBuys(opts: { window?: string; limit?: number } = {}): Promise<ClusterBuy[]> {
     const params = new URLSearchParams();
     if (opts.window) params.set("window", opts.window);
     if (opts.limit) params.set("limit", String(opts.limit));
-    const data = await this.getJson<{ clusters?: ClusterBuy[] }>(API_PATHS.ANALYTICS_CLUSTER_BUYS, params);
-    return Array.isArray(data.clusters) ? data.clusters : [];
+    return parseResponse(
+      z.object({ clusters: z.array(ClusterBuySchema) }),
+      await this.getJson<unknown>(API_PATHS.ANALYTICS_CLUSTER_BUYS, params),
+      "cluster buys",
+    ).clusters;
   }
 
   async getMemberLeaderboard(opts: { window?: string; limit?: number } = {}): Promise<MemberLeader[]> {
     const params = new URLSearchParams();
     if (opts.window) params.set("window", opts.window);
     if (opts.limit) params.set("limit", String(opts.limit));
-    const data = await this.getJson<{ members?: MemberLeader[] }>(API_PATHS.ANALYTICS_MEMBER_LEADERBOARD, params);
-    return Array.isArray(data.members) ? data.members : [];
+    return parseResponse(
+      z.object({ members: z.array(MemberLeaderSchema) }),
+      await this.getJson<unknown>(API_PATHS.ANALYTICS_MEMBER_LEADERBOARD, params),
+      "member leaderboard",
+    ).members;
   }
 
   async getMemberPerformance(filerId: string): Promise<MemberPerformance | null> {
     if (!filerId) return null;
-    const data = await this.getJson<{ performance?: MemberPerformance }>(
-      `${API_PATHS.ANALYTICS_MEMBER_PERFORMANCE}/${encodeURIComponent(filerId)}/performance`
+    const data = parseResponse(
+      z.object({ performance: MemberPerformanceSchema.nullable() }),
+      await this.getJson<unknown>(
+        `${API_PATHS.ANALYTICS_MEMBER_PERFORMANCE}/${encodeURIComponent(filerId)}/performance`
+      ),
+      "member performance",
     );
-    return data.performance ?? null;
+    return data.performance;
   }
 
   async getConviction(opts: { window?: string; limit?: number } = {}): Promise<ConvictionTicker[]> {
     const params = new URLSearchParams();
     if (opts.window) params.set("window", opts.window);
     if (opts.limit) params.set("limit", String(opts.limit));
-    const data = await this.getJson<{ tickers?: ConvictionTicker[] }>(API_PATHS.ANALYTICS_CONVICTION, params);
-    return Array.isArray(data.tickers) ? data.tickers : [];
+    return parseResponse(
+      z.object({ tickers: z.array(ConvictionTickerSchema) }),
+      await this.getJson<unknown>(API_PATHS.ANALYTICS_CONVICTION, params),
+      "conviction",
+    ).tickers;
   }
 
   async getTickerBacktest(
@@ -227,11 +373,12 @@ export class CongressTradeClient {
     if (opts.window) params.set("window", opts.window);
     if (opts.horizons) params.set("horizons", opts.horizons);
     if (opts.filerId) params.set("filerId", opts.filerId);
-    const data = await this.getJson<TickerBacktest>(
+    const data = await this.getJson<unknown>(
       `${API_PATHS.ANALYTICS_TICKER_BACKTEST}/${encodeURIComponent(ticker)}/backtest`,
       params
     );
-    return data?.horizons?.length ? data : null;
+    const parsed = parseResponse(TickerBacktestSchema, data, "ticker backtest");
+    return parsed.horizons.length ? parsed : null;
   }
 
   async getConflicts(
@@ -242,8 +389,11 @@ export class CongressTradeClient {
     if (opts.limit) params.set("limit", String(opts.limit));
     if (opts.chamber) params.set("chamber", opts.chamber);
     if (opts.party) params.set("party", opts.party);
-    const data = await this.getJson<{ conflicts?: CommitteeConflict[] }>(API_PATHS.ANALYTICS_CONFLICTS, params);
-    return Array.isArray(data.conflicts) ? data.conflicts : [];
+    return parseResponse(
+      z.object({ conflicts: z.array(CommitteeConflictSchema) }),
+      await this.getJson<unknown>(API_PATHS.ANALYTICS_CONFLICTS, params),
+      "committee conflicts",
+    ).conflicts;
   }
 }
 
@@ -253,27 +403,87 @@ export interface SseMessage {
   data: string;
 }
 
+export interface SseParserOptions {
+  /** Maximum characters allowed in one SSE field line before the parser resets and throws. */
+  maxLineLength?: number;
+  /** Maximum joined data characters allowed in one event before the parser resets and throws. */
+  maxEventDataLength?: number;
+}
+
 /** Incremental text/event-stream parser. Feed decoded chunks; get back complete events. */
 export class SseParser {
   private buf = "";
-  private cur: { event?: string; id?: string; data: string[] } = { data: [] };
+  private cur: { event?: string; data: string[] } = { data: [] };
+  private lastEventId: string | undefined;
+  private atStart = true;
+  private swallowLeadingLf = false;
+  private eventDataLength = 0;
+  private readonly maxLineLength: number;
+  private readonly maxEventDataLength: number;
+
+  constructor(options: SseParserOptions = {}) {
+    this.maxLineLength = options.maxLineLength ?? 64 * 1024;
+    this.maxEventDataLength = options.maxEventDataLength ?? 1024 * 1024;
+    if (!Number.isInteger(this.maxLineLength) || this.maxLineLength <= 0) {
+      throw new RangeError("maxLineLength must be a positive integer");
+    }
+    if (!Number.isInteger(this.maxEventDataLength) || this.maxEventDataLength <= 0) {
+      throw new RangeError("maxEventDataLength must be a positive integer");
+    }
+  }
+
+  private resetAfterLimit(message: string): never {
+    this.buf = "";
+    this.cur = { data: [] };
+    this.lastEventId = undefined;
+    this.atStart = true;
+    this.swallowLeadingLf = false;
+    this.eventDataLength = 0;
+    throw new RangeError(message);
+  }
 
   push(chunk: string): SseMessage[] {
+    if (this.swallowLeadingLf && chunk.length > 0) {
+      if (chunk.startsWith("\n")) chunk = chunk.slice(1);
+      this.swallowLeadingLf = false;
+    }
+    if (this.atStart && chunk.length > 0) {
+      this.atStart = false;
+      if (chunk.startsWith("\uFEFF")) chunk = chunk.slice(1);
+    }
     this.buf += chunk;
     const out: SseMessage[] = [];
-    let nl: number;
-    while ((nl = this.buf.indexOf("\n")) >= 0) {
-      let line = this.buf.slice(0, nl);
-      this.buf = this.buf.slice(nl + 1);
-      if (line.endsWith("\r")) line = line.slice(0, -1);
+    for (;;) {
+      const lf = this.buf.indexOf("\n");
+      const cr = this.buf.indexOf("\r");
+      const lineEnd = lf === -1 ? cr : cr === -1 ? lf : Math.min(lf, cr);
+      if (lineEnd < 0) {
+        if (this.buf.length > this.maxLineLength) {
+          this.resetAfterLimit(`SSE line exceeds ${this.maxLineLength} characters`);
+        }
+        break;
+      }
+      if (lineEnd > this.maxLineLength) {
+        this.resetAfterLimit(`SSE line exceeds ${this.maxLineLength} characters`);
+      }
+
+      const delimiter = this.buf[lineEnd];
+      let delimiterLength = 1;
+      if (delimiter === "\r") {
+        if (this.buf[lineEnd + 1] === "\n") delimiterLength = 2;
+        else if (lineEnd === this.buf.length - 1) this.swallowLeadingLf = true;
+      }
+      const line = this.buf.slice(0, lineEnd);
+      this.buf = this.buf.slice(lineEnd + delimiterLength);
       if (line === "") {
         if (this.cur.data.length > 0) {
           const msg: SseMessage = { data: this.cur.data.join("\n") };
           if (this.cur.event !== undefined) msg.event = this.cur.event;
-          if (this.cur.id !== undefined) msg.id = this.cur.id;
+          if (this.lastEventId !== undefined) msg.id = this.lastEventId;
           out.push(msg);
         }
         this.cur = { data: [] };
+        this.eventDataLength = 0;
         continue;
       }
       if (line.startsWith(":")) continue; // comment / heartbeat
@@ -281,9 +491,17 @@ export class SseParser {
       const field = colon === -1 ? line : line.slice(0, colon);
       let value = colon === -1 ? "" : line.slice(colon + 1);
       if (value.startsWith(" ")) value = value.slice(1);
-      if (field === "data") this.cur.data.push(value);
-      else if (field === "event") this.cur.event = value;
-      else if (field === "id") this.cur.id = value;
+      if (field === "data") {
+        const separatorLength = this.cur.data.length > 0 ? 1 : 0;
+        const nextLength = this.eventDataLength + separatorLength + value.length;
+        if (nextLength > this.maxEventDataLength) {
+          this.resetAfterLimit(`SSE event data exceeds ${this.maxEventDataLength} characters`);
+        }
+        this.cur.data.push(value);
+        this.eventDataLength = nextLength;
+      }
+      else if (field === "event") this.cur.event = value || undefined;
+      else if (field === "id" && !value.includes("\0")) this.lastEventId = value;
     }
     return out;
   }

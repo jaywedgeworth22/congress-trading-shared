@@ -11,6 +11,8 @@ describe("STOCK Act brackets helpers", () => {
     expect(STOCK_ACT_BRACKETS).toHaveLength(10);
     expect(STOCK_ACT_BRACKETS[0]).toEqual({ min: 1001, max: 15000 });
     expect(STOCK_ACT_BRACKETS[9]).toEqual({ min: 50000001, max: null });
+    expect(Object.isFrozen(STOCK_ACT_BRACKETS)).toBe(true);
+    expect(STOCK_ACT_BRACKETS.every(Object.isFrozen)).toBe(true);
 
     for (let i = 1; i < STOCK_ACT_BRACKETS.length; i++) {
       expect(STOCK_ACT_BRACKETS[i].min).toBeGreaterThan(STOCK_ACT_BRACKETS[i - 1].min);
@@ -39,9 +41,18 @@ describe("STOCK Act brackets helpers", () => {
     // Open-ended snap
     expect(nearestBracket(60000000, 100000000)).toEqual({ min: 50000001, max: null });
     expect(nearestBracket(60000000, null)).toEqual({ min: 50000001, max: null });
+    expect(nearestBracket(50000000, null)).toEqual({ min: 50000001, max: null });
+    expect(nearestBracket(1001, null)).toBeNull();
     // Out of bounds lo
     expect(nearestBracket(0, 1000)).toBeNull();
     // Non-finite min
     expect(nearestBracket(NaN, 1000)).toBeNull();
+    expect(nearestBracket(Number.POSITIVE_INFINITY, null)).toBeNull();
+    // Invalid or non-finite max
+    expect(nearestBracket(16000, 14000)).toBeNull();
+    expect(nearestBracket(60000000, NaN)).toBeNull();
+    expect(nearestBracket(60000000, Number.POSITIVE_INFINITY)).toBeNull();
+    // Negative values are not disclosure brackets
+    expect(nearestBracket(-1, 1000)).toBeNull();
   });
 });

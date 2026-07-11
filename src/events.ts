@@ -1,4 +1,5 @@
 import type { CongressEvent, CongressEventType } from "./types";
+import { CongressEventSchema } from "./schemas";
 
 /**
  * Creates a standardized CongressEvent object.
@@ -10,12 +11,12 @@ export function createCongressEvent<T = unknown>(
   options?: Omit<CongressEvent, "type" | "data">
 ): CongressEvent {
   const event: CongressEvent = {
+    ...options,
     type,
     emittedAt: options?.emittedAt ?? new Date().toISOString(),
-    ...options,
   };
   if (data !== undefined) {
     event.data = data;
   }
-  return event;
+  return CongressEventSchema.parse(event);
 }

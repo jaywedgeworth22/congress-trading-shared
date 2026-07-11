@@ -210,6 +210,11 @@ describe("PriceCloseSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("normalizes a wire-level null volume to an omitted optional value", () => {
+    expect(PriceCloseSchema.parse({ date: "2024-01-15", close: 185.25, volume: null }))
+      .toEqual({ date: "2024-01-15", close: 185.25, volume: undefined });
+  });
+
   it("rejects missing required fields", () => {
     expect(PriceCloseSchema.safeParse({ date: "2024-01-15" }).success).toBe(false);
     expect(PriceCloseSchema.safeParse({ close: 100 }).success).toBe(false);
@@ -260,10 +265,10 @@ describe("SecurityRefSchema", () => {
     expect(SecurityRefSchema.safeParse({ ...validRef, ticker: "" }).success).toBe(false);
   });
 
-  it("rejects ticker longer than 10 chars", () => {
-    expect(
-      SecurityRefSchema.safeParse({ ...validRef, ticker: "VERYLONGTICKER" }).success,
-    ).toBe(false);
+  it("accepts read tickers up to the same 20-character limit as imports", () => {
+    const ticker = "A".repeat(20);
+    expect(SecurityRefInputSchema.safeParse({ ticker }).success).toBe(true);
+    expect(SecurityRefSchema.safeParse({ ...validRef, ticker }).success).toBe(true);
   });
 
   it("accepts null for nullable fields", () => {
@@ -337,10 +342,8 @@ describe("SecurityRefInputSchema", () => {
     expect(SecurityRefInputSchema.safeParse({ ticker: "" }).success).toBe(false);
   });
 
-  it("allows longer ticker (up to 20) unlike SecurityRefSchema", () => {
-    // SecurityRefSchema max is 10, SecurityRefInputSchema max is 20
-    const result = SecurityRefInputSchema.safeParse({ ticker: "A".repeat(15) });
-    expect(result.success).toBe(true);
+  it("accepts ticker lengths up to 20", () => {
+    expect(SecurityRefInputSchema.safeParse({ ticker: "A".repeat(20) }).success).toBe(true);
   });
 
   it("rejects ticker longer than 20", () => {
@@ -374,9 +377,14 @@ describe("CongressTransactionSchema", () => {
     txType: "P",
     amountMin: 1001,
     amountMax: 15000,
+    estValue: 8000,
     isOption: false,
     capGainsOver200: false,
     rawText: "purchased Apple shares",
+    confidence: 0.95,
+    source: "primary",
+    createdAt: "2026-01-16T00:00:00Z",
+    cursorSeq: 50,
   };
 
   it("parses a valid transaction", () => {
@@ -431,7 +439,15 @@ describe("CongressTransactionSchema", () => {
   });
 
   it("accepts optional fields when absent", () => {
-    const result = CongressTransactionSchema.safeParse(validTx);
+    const {
+      estValue: _estValue,
+      confidence: _confidence,
+      source: _source,
+      createdAt: _createdAt,
+      cursorSeq: _cursorSeq,
+      ...minimalTx
+    } = validTx;
+    const result = CongressTransactionSchema.safeParse(minimalTx);
     expect(result.success).toBe(true);
   });
 
@@ -476,9 +492,14 @@ describe("TransactionsPageSchema", () => {
     txType: "P",
     amountMin: 1001,
     amountMax: 15000,
+    estValue: 8000,
     isOption: false,
     capGainsOver200: false,
     rawText: "purchased Apple shares",
+    confidence: 0.95,
+    source: "primary",
+    createdAt: "2026-01-16T00:00:00Z",
+    cursorSeq: 50,
   };
 
   it("parses a valid transactions page", () => {
@@ -538,6 +559,17 @@ describe("TransactionsPageSchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("rejects read rows missing required cursor provenance", () => {
+    const { cursorSeq: _cursorSeq, ...withoutCursor } = validTx;
+    expect(TransactionsPageSchema.safeParse({
+      transactions: [withoutCursor],
+      cursor: 50,
+      count: 1,
+      total: 100,
+      limit: 20,
+    }).success).toBe(false);
+  });
 });
 
 // =============================================================================
@@ -568,6 +600,22 @@ describe("FundamentalRowSchema", () => {
       date: "2024-01-15",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("normalizes nullable wire values and retains read metadata", () => {
+    expect(FundamentalRowSchema.parse({
+      ticker: "AAPL",
+      date: "2024-01-15",
+      peRatio: null,
+      source: null,
+      updatedAt: "2024-01-15T10:00:00Z",
+    })).toEqual({
+      ticker: "AAPL",
+      date: "2024-01-15",
+      peRatio: undefined,
+      source: undefined,
+      updatedAt: "2024-01-15T10:00:00Z",
+    });
   });
 
   it("rejects missing ticker", () => {
@@ -612,6 +660,21 @@ describe("AnalystRowSchema", () => {
       date: "2024-01-15",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("normalizes nullable wire values and retains analyst metadata", () => {
+    const result = AnalystRowSchema.parse({
+      ticker: "AAPL",
+      date: "2024-01-15",
+      rating: null,
+      targetMean: null,
+      analystCount: 12,
+      source: "provider",
+      updatedAt: "2024-01-15T10:00:00Z",
+    });
+    expect(result).toMatchObject({ ticker: "AAPL", analystCount: 12, source: "provider" });
+    expect(result.rating).toBeUndefined();
+    expect(result.targetMean).toBeUndefined();
   });
 });
 
@@ -714,12 +777,26 @@ describe("PriceSeriesSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects empty closes", () => {
+  it("accepts empty closes", () => {
     const result = PriceSeriesSchema.safeParse({
       ticker: "AAPL",
       closes: [],
     });
     expect(result.success).toBe(true); // empty array is fine
+  });
+
+  it("normalizes nullable current price fields from the read API", () => {
+    expect(PriceSeriesSchema.parse({
+      ticker: "AAPL",
+      closes: [],
+      currentPrice: null,
+      currentPriceDate: null,
+    })).toEqual({
+      ticker: "AAPL",
+      closes: [],
+      currentPrice: undefined,
+      currentPriceDate: undefined,
+    });
   });
 
   it("rejects closes with invalid entry", () => {
@@ -851,6 +928,17 @@ describe("CongressEventSchema", () => {
 
   it("rejects missing type", () => {
     expect(CongressEventSchema.safeParse({}).success).toBe(false);
+  });
+
+  it.each([
+    { type: "" },
+    { type: "   " },
+    { type: "custom", id: "" },
+    { type: "custom", seq: -1 },
+    { type: "custom", seq: 1.5 },
+    { type: "custom", emittedAt: "not-a-date" },
+  ])("rejects malformed event envelope %#", (event) => {
+    expect(CongressEventSchema.safeParse(event).success).toBe(false);
   });
 });
 
@@ -1158,6 +1246,7 @@ describe("ClientTransactionSchema", () => {
       owner: "self",
       amountMin: 1001,
       amountMax: 15000,
+      estValue: 8000,
       isOption: false,
     });
     expect(result.success).toBe(true);
@@ -1342,7 +1431,7 @@ describe("TransactionsQuerySchema", () => {
 
   it("parses fully populated query", () => {
     const result = TransactionsQuerySchema.safeParse({
-      since: "2024-01-01",
+      since: "42",
       from: "2024-01-01",
       to: "2024-12-31",
       ticker: "AAPL",
@@ -1353,6 +1442,15 @@ describe("TransactionsQuerySchema", () => {
       order: "asc",
     });
     expect(result.success).toBe(true);
+  });
+
+  it.each(["42", 42, 0])("accepts numeric resume cursor %s", (since) => {
+    expect(TransactionsQuerySchema.safeParse({ since }).success).toBe(true);
+  });
+
+  it("rejects malformed cursor strings", () => {
+    expect(TransactionsQuerySchema.safeParse({ since: "42x" }).success).toBe(false);
+    expect(TransactionsQuerySchema.safeParse({ since: "2024-01-01" }).success).toBe(false);
   });
 
   it("rejects invalid chamber", () => {

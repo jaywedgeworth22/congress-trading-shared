@@ -38,4 +38,15 @@ describe("events", () => {
       emittedAt: "2025-01-01T00:00:00.000Z",
     });
   });
+
+  it("keeps the generated timestamp when emittedAt is explicitly undefined", () => {
+    const event = createCongressEvent("spx.eod", undefined, { emittedAt: undefined });
+    expect(event.emittedAt).toBe("2026-07-05T20:50:00.000Z");
+  });
+
+  it("rejects malformed event envelopes", () => {
+    expect(() => createCongressEvent(" ")).toThrow();
+    expect(() => createCongressEvent("custom.event", undefined, { id: "" })).toThrow();
+    expect(() => createCongressEvent("custom.event", undefined, { seq: -1 })).toThrow();
+  });
 });
