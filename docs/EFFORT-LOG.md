@@ -157,6 +157,13 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
+- **Portable operation-guard rejection contract (AG, owner-directed, S) — READY PR #144.**
+  Support Socratic.Trade's admin abuse-control work and future Congress.Trade consumers with an
+  additive shared Zod/TypeScript contract plus pure builders/status mapping for stable
+  `rate_limited` (HTTP 429; operation + retryAfterSeconds) and `operation_in_flight` (HTTP 409;
+  operation + activeOperation) rejections. Reject malformed/negative retry values; export from the
+  package barrel; add schema/builder tests and release notes. Keep runtime maps, auth identity,
+  and enforcement app-local. Version bumped to 1.5.0. Gate receipts: vitest 351 tests pass, tsc clean, build clean.
 - **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
   Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
   `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
