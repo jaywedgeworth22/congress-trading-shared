@@ -33,6 +33,17 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Portable operation-guard rejection contract (AG implementation, CODEX release coordination, owner-directed, S) — MERGED PR #144; RELEASE IN PROGRESS.**
+  Support Socratic.Trade's admin abuse-control work and future Congress.Trade consumers with an
+  additive shared Zod/TypeScript contract plus pure builders/status mapping for stable
+  `rate_limited` (HTTP 429; operation + retryAfterSeconds) and `operation_in_flight` (HTTP 409;
+  operation + activeOperation) rejections. Reject malformed/negative retry values; export from the
+  package barrel; add schema/builder tests and release notes. Keep runtime maps, auth identity,
+  and enforcement app-local. Version bumped to 1.5.0. Gate receipts: vitest 351 tests pass, tsc clean, build clean.
+  PR #144 merged to `main` as `2222baeb` at 2026-07-11T16:01:53Z after green hosted checks and
+  zero unresolved current review threads. A clean tokenless HTTPS install from that merge SHA
+  reports package 1.5.0 and passes CJS+ESM rejection-builder/status smoke. Release-hygiene follow-up
+  corrects the changelog comparison links before the lightweight v1.5.0 tag; no registry publish.
 - **Codex autofix reusable workflow: migrate from Anthropic to DeepSeek (MONET, S)** —
   COMPLETED 2026-07-10. Merged PR
   [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`). The
@@ -157,17 +168,6 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
-- **Portable operation-guard rejection contract (AG implementation, CODEX release coordination, owner-directed, S) — MERGED PR #144; RELEASE IN PROGRESS.**
-  Support Socratic.Trade's admin abuse-control work and future Congress.Trade consumers with an
-  additive shared Zod/TypeScript contract plus pure builders/status mapping for stable
-  `rate_limited` (HTTP 429; operation + retryAfterSeconds) and `operation_in_flight` (HTTP 409;
-  operation + activeOperation) rejections. Reject malformed/negative retry values; export from the
-  package barrel; add schema/builder tests and release notes. Keep runtime maps, auth identity,
-  and enforcement app-local. Version bumped to 1.5.0. Gate receipts: vitest 351 tests pass, tsc clean, build clean.
-  PR #144 merged to `main` as `2222baeb` at 2026-07-11T16:01:53Z after green hosted checks and
-  zero unresolved current review threads. A clean tokenless HTTPS install from that merge SHA
-  reports package 1.5.0 and passes CJS+ESM rejection-builder/status smoke. Release-hygiene follow-up
-  corrects the changelog comparison links before the lightweight v1.5.0 tag; no registry publish.
 - **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
   Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
   `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
