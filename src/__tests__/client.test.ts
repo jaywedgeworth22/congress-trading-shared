@@ -8,12 +8,44 @@ function mockClient(fetchFn: typeof fetch) {
   });
 }
 
+const validRef = {
+  ticker: "AAPL",
+  companyName: null,
+  sector: null,
+  industry: null,
+  assetClass: null,
+  isEtf: false,
+  isAdr: false,
+  country: null,
+  stateHq: null,
+  stateOfIncorp: null,
+  exchange: null,
+  exchangeShort: null,
+  currency: null,
+  marketCap: null,
+  marketCapBucket: null,
+  sharesOutstanding: null,
+  ipoDate: null,
+  cik: null,
+  sicCode: null,
+  sicDescription: null,
+  source: null,
+};
+
+const emptyTransactionsPage = {
+  transactions: [],
+  cursor: 0,
+  count: 0,
+  total: 0,
+  limit: 100,
+};
+
 describe("CongressTradeClient", () => {
   describe("request plumbing", () => {
     it("sends request with correct url and headers", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ ref: { ticker: "AAPL" } }),
+        json: async () => ({ ref: validRef }),
       });
 
       const client = new CongressTradeClient({
@@ -32,7 +64,7 @@ describe("CongressTradeClient", () => {
         accept: "application/json",
         authorization: "Bearer secret-token",
       });
-      expect(result).toEqual({ ticker: "AAPL" });
+      expect(result).toEqual(validRef);
     });
 
     it("strips trailing slash from baseUrl", async () => {
@@ -43,10 +75,13 @@ describe("CongressTradeClient", () => {
       expect(url).toBe("https://api.example.com/api/market/ref/AAPL");
     });
 
-    it("throws on non-ok HTTP response", async () => {
+    it("returns null for a missing ref and throws other HTTP errors", async () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
       const client = mockClient(mockFetch);
-      await expect(client.getRef("NOPE")).rejects.toThrow("Request failed: GET /api/market/ref/NOPE -> HTTP 404");
+      await expect(client.getRef("NOPE")).resolves.toBeNull();
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+      await expect(client.getRef("NOPE")).rejects.toThrow("Request failed: GET /api/market/ref/NOPE -> HTTP 500");
     });
   });
 
@@ -54,7 +89,11 @@ describe("CongressTradeClient", () => {
     it("creates a subscription via POST", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "sub-1", secret: "sec-abc" }),
+        json: async () => ({
+          id: "sub-1",
+          secret: "generated-secret-123",
+          streamUrl: "/api/stream?subscription=sub-1&token=generated-secret-123",
+        }),
       });
       const client = mockClient(mockFetch);
       const result = await client.createSubscription("client-1");
@@ -63,37 +102,39 @@ describe("CongressTradeClient", () => {
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://custom.congress.trade/api/subscriptions");
       expect(init.method).toBe("POST");
-      expect(result).toEqual({ id: "sub-1", secret: "sec-abc" });
+      expect(result).toEqual({
+        id: "sub-1",
+        secret: "generated-secret-123",
+        streamUrl: "/api/stream?subscription=sub-1&token=generated-secret-123",
+      });
     });
 
     it("sends desiredSecret when long enough", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "sub-1", secret: "my-custom-secret" }),
+        json: async () => ({ id: "sub-1", secret: "my-custom-secret-1" }),
       });
       const client = mockClient(mockFetch);
-      await client.createSubscription("client-1", "my-custom-secret");
+      await client.createSubscription("client-1", "my-custom-secret-1");
       const [, init] = mockFetch.mock.calls[0];
       const body = JSON.parse(init.body as string);
-      expect(body.secret).toBe("my-custom-secret");
+      expect(body.secret).toBe("my-custom-secret-1");
     });
 
-    it("omits secret when shorter than 16 chars", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ id: "sub-1", secret: "auto-secret" }),
-      });
+    it("rejects desired secrets outside the server's 16-256 character range", async () => {
+      const mockFetch = vi.fn();
       const client = mockClient(mockFetch);
-      await client.createSubscription("client-1", "short");
-      const [, init] = mockFetch.mock.calls[0];
-      const body = JSON.parse(init.body as string);
-      expect(body.secret).toBeUndefined();
+      await expect(client.createSubscription("client-1", "short")).rejects.toThrow("16-256 characters");
+      await expect(client.createSubscription("client-1", "s".repeat(257))).rejects.toThrow("16-256 characters");
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it("throws on HTTP error", async () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 409 });
       const client = mockClient(mockFetch);
-      await expect(client.createSubscription("client-1")).rejects.toThrow("subscription create failed: HTTP 409");
+      await expect(client.createSubscription("client-1")).rejects.toThrow(
+        "Request failed: POST /api/subscriptions -> HTTP 409",
+      );
     });
 
     it("throws when response has no id or secret", async () => {
@@ -102,35 +143,46 @@ describe("CongressTradeClient", () => {
         json: async () => ({}),
       });
       const client = mockClient(mockFetch);
-      await expect(client.createSubscription("client-1")).rejects.toThrow("subscription create returned no id/secret");
+      await expect(client.createSubscription("client-1")).rejects.toThrow("Invalid subscription create response");
     });
   });
 
   describe("market data endpoints", () => {
     it("getBundle returns ref, prices, and spx", async () => {
-      const mockData = { ref: { ticker: "MSFT" }, prices: { ticker: "MSFT", closes: [] }, spx: [{ date: "2026-01-01", close: 5000 }] };
+      const mockData = {
+        ticker: "MSFT",
+        ref: { ...validRef, ticker: "MSFT" },
+        prices: { ticker: "MSFT", closes: [] },
+        spx: [{ date: "2026-01-01", close: 5000 }],
+      };
       const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => mockData });
       const client = mockClient(mockFetch);
       const result = await client.getBundle("MSFT", { from: "2026-01-01", to: "2026-06-01" });
-      expect(result.ref).toEqual({ ticker: "MSFT" });
+      expect(result.ticker).toBe("MSFT");
+      expect(result.ref).toEqual({ ...validRef, ticker: "MSFT" });
       expect(result.prices).toEqual({ ticker: "MSFT", closes: [] });
       expect(result.spx).toEqual([{ date: "2026-01-01", close: 5000 }]);
     });
 
-    it("getBundle handles null/missing fields", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    it("getBundle handles explicit null/empty fields and rejects a missing envelope", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ticker: "MSFT", ref: null, prices: null, spx: [] }),
+      });
       const client = mockClient(mockFetch);
       const result = await client.getBundle("MSFT");
       expect(result.ref).toBeNull();
       expect(result.prices).toBeNull();
       expect(result.spx).toEqual([]);
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+      await expect(client.getBundle("MSFT")).rejects.toThrow("Invalid market bundle response");
     });
 
-    it("getPrices returns null when no closes array", async () => {
+    it("getPrices rejects a malformed response with no closes array", async () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ticker: "AAPL" }) });
       const client = mockClient(mockFetch);
-      const result = await client.getPrices("AAPL", { from: "2026-01-01" });
-      expect(result).toBeNull();
+      await expect(client.getPrices("AAPL", { from: "2026-01-01" }))
+        .rejects.toThrow("Invalid market prices response");
     });
 
     it("getPrices returns data when closes present", async () => {
@@ -153,38 +205,97 @@ describe("CongressTradeClient", () => {
       expect(result).toEqual([{ date: "2026-01-01", close: 5000 }]);
     });
 
-    it("getSpx returns empty array on missing closes", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    it("getSpx accepts an explicit empty array and rejects a missing envelope", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ closes: [] }) });
       const client = mockClient(mockFetch);
       const result = await client.getSpx();
       expect(result).toEqual([]);
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+      await expect(client.getSpx()).rejects.toThrow("Invalid SPX prices response");
     });
 
     it("getFundamentals returns rows array", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ rows: [{ ticker: "AAPL", date: "2026-01-01", peRatio: 30 }] }),
+        json: async () => ({
+          ticker: "AAPL",
+          rows: [{ date: "2026-01-01", peRatio: null, source: null, updatedAt: "2026-01-01T00:00:00Z" }],
+        }),
       });
       const client = mockClient(mockFetch);
       const result = await client.getFundamentals("AAPL", { from: "2026-01-01" });
-      expect(result).toEqual([{ ticker: "AAPL", date: "2026-01-01", peRatio: 30 }]);
+      expect(result).toEqual([{
+        ticker: "AAPL",
+        date: "2026-01-01",
+        peRatio: undefined,
+        source: undefined,
+        updatedAt: "2026-01-01T00:00:00Z",
+      }]);
     });
 
-    it("getFundamentals returns empty array on missing rows", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    it("getFundamentals accepts explicit empty rows and rejects a missing envelope", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ rows: [] }) });
       const client = mockClient(mockFetch);
       const result = await client.getFundamentals("AAPL");
       expect(result).toEqual([]);
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+      await expect(client.getFundamentals("AAPL")).rejects.toThrow("Invalid market fundamentals response");
     });
 
     it("getAnalyst returns rows array", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ rows: [{ ticker: "AAPL", date: "2026-01-01", rating: "Buy" }] }),
+        json: async () => ({
+          ticker: "AAPL",
+          rows: [{ date: "2026-01-01", rating: null, analystCount: 10 }],
+        }),
       });
       const client = mockClient(mockFetch);
       const result = await client.getAnalyst("AAPL");
-      expect(result).toEqual([{ ticker: "AAPL", date: "2026-01-01", rating: "Buy" }]);
+      expect(result).toEqual([{ ticker: "AAPL", date: "2026-01-01", rating: undefined, analystCount: 10 }]);
+    });
+
+    it("getInsider injects the scoped ticker and preserves nullable read values", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ticker: "AAPL",
+          rows: [{
+            date: "2026-01-01",
+            sentiment: null,
+            buyFilings: null,
+            sellFilings: 1,
+            buyShares: null,
+            sellShares: 20,
+            owners: [],
+          }],
+        }),
+      });
+      const client = mockClient(mockFetch);
+      await expect(client.getInsider("AAPL")).resolves.toEqual([{
+        ticker: "AAPL",
+        date: "2026-01-01",
+        sentiment: null,
+        buyFilings: null,
+        sellFilings: 1,
+        buyShares: null,
+        sellShares: 20,
+        owners: [],
+      }]);
+    });
+
+    it("getShortVolume injects the scoped ticker and preserves a null ratio", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ticker: "AAPL", rows: [{ date: "2026-01-01", ratio: null, elevated: false }] }),
+      });
+      const client = mockClient(mockFetch);
+      await expect(client.getShortVolume("AAPL")).resolves.toEqual([{
+        ticker: "AAPL",
+        date: "2026-01-01",
+        ratio: null,
+        elevated: false,
+      }]);
     });
 
     it("getRefs returns empty array for empty input", async () => {
@@ -201,11 +312,24 @@ describe("CongressTradeClient", () => {
       const result = await client.getRef("NOPE");
       expect(result).toBeNull();
     });
+
+    it("normalizes the producer's missing sharesOutstanding field to null", async () => {
+      const { sharesOutstanding: _omitted, ...producerRef } = validRef;
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ref: producerRef }) });
+      const client = mockClient(mockFetch);
+      await expect(client.getRef("AAPL")).resolves.toEqual(validRef);
+    });
+
+    it("rejects malformed typed payloads instead of returning unsafe casts", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ref: { ticker: 7 } }) });
+      const client = mockClient(mockFetch);
+      await expect(client.getRef("AAPL")).rejects.toThrow("Invalid market ref response");
+    });
   });
 
   describe("transactions", () => {
     it("handles optional query parameters correctly", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ transactions: [] }) });
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => emptyTransactionsPage });
       const client = mockClient(mockFetch);
       await client.getTransactions({ ticker: "AAPL", limit: 10, order: "asc" });
       const [url] = mockFetch.mock.calls[0];
@@ -213,10 +337,10 @@ describe("CongressTradeClient", () => {
     });
 
     it("handles all query params", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ transactions: [] }) });
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => emptyTransactionsPage });
       const client = mockClient(mockFetch);
       await client.getTransactions({
-        since: "2026-01-01",
+        since: "42",
         from: "2026-01-01",
         to: "2026-06-30",
         ticker: "MSFT",
@@ -227,13 +351,38 @@ describe("CongressTradeClient", () => {
         order: "desc",
       });
       const [url] = mockFetch.mock.calls[0];
-      expect(url).toContain("since=2026-01-01");
+      expect(url).toContain("since=42");
       expect(url).toContain("chamber=house");
       expect(url).toContain("order=desc");
     });
 
+    it("preserves required read provenance and additive transaction fields", async () => {
+      const transaction = {
+        id: "tx-1", docId: "doc-1", filerId: null, txDate: "2026-01-01", owner: "self",
+        assetName: "Apple", ticker: "AAPL", assetType: "stock", txType: "P",
+        amountMin: 1001, amountMax: 15000, estValue: 8000, isOption: false,
+        capGainsOver200: false, rawText: "Apple", confidence: 0.9, source: "primary",
+        createdAt: "2026-01-02T00:00:00Z", cursorSeq: 42,
+      };
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ...emptyTransactionsPage, transactions: [transaction], cursor: 42, count: 1, total: 1 }),
+      });
+      const client = mockClient(mockFetch);
+      await expect(client.getTransactions({ since: 0 })).resolves.toMatchObject({
+        transactions: [{ estValue: 8000, source: "primary", cursorSeq: 42 }],
+      });
+    });
+
+    it("rejects invalid resume cursors before issuing a request", async () => {
+      const mockFetch = vi.fn();
+      const client = mockClient(mockFetch);
+      await expect(client.getTransactions({ since: "2026-01-01" as never })).rejects.toThrow();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
     it("chunks getRefs requests when length exceeds MAX_REFS_BATCH", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ refs: [{ ticker: "AAPL" }] }) });
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ refs: [validRef] }) });
       const client = mockClient(mockFetch);
       const tickers = Array.from({ length: 505 }, (_, i) => `T${i}`);
       const results = await client.getRefs(tickers);
@@ -253,11 +402,13 @@ describe("CongressTradeClient", () => {
       expect(result).toEqual([{ ticker: "AAPL", tradeCount: 5 }]);
     });
 
-    it("getTickerLeaderboard returns empty on missing array", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    it("getTickerLeaderboard accepts explicit empty rows and rejects a missing envelope", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ tickers: [] }) });
       const client = mockClient(mockFetch);
       const result = await client.getTickerLeaderboard();
       expect(result).toEqual([]);
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+      await expect(client.getTickerLeaderboard()).rejects.toThrow("Invalid ticker leaderboard response");
     });
 
     it("getClusterBuys returns clusters array", async () => {
@@ -298,11 +449,13 @@ describe("CongressTradeClient", () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it("getMemberPerformance returns null when no performance key", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    it("getMemberPerformance accepts explicit null and rejects a missing envelope", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ performance: null }) });
       const client = mockClient(mockFetch);
       const result = await client.getMemberPerformance("filer-1");
       expect(result).toBeNull();
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+      await expect(client.getMemberPerformance("filer-1")).rejects.toThrow("Invalid member performance response");
     });
 
     it("getConviction returns tickers array", async () => {
@@ -318,12 +471,13 @@ describe("CongressTradeClient", () => {
     it("getTickerBacktest returns backtest with horizons", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ ticker: "AAPL", txType: "P", totalBuyEvents: 5, pricedDays: 30, horizons: [{ days: 30, tradeCount: 5, n: 5, medianReturn: 2.5, avgReturn: 3.0, winRate: 0.8, medianExcess: 1.5, avgExcess: 2.0 }] }),
+        json: async () => ({ ticker: "AAPL", filerId: "123", txType: "P", totalBuyEvents: 5, pricedDays: 30, horizons: [{ days: 30, tradeCount: 5, n: 5, medianReturn: 2.5, avgReturn: 3.0, winRate: 0.8, medianExcess: 1.5, avgExcess: 2.0 }] }),
       });
       const client = mockClient(mockFetch);
       const result = await client.getTickerBacktest("AAPL", { window: "90d", horizons: "30,60", filerId: "123" });
       expect(result!.horizons).toHaveLength(1);
       expect(result!.horizons[0].days).toBe(30);
+      expect(result!.filerId).toBe("123");
     });
 
     it("getTickerBacktest returns null for empty horizons", async () => {
@@ -347,19 +501,24 @@ describe("CongressTradeClient", () => {
       expect(result[0].ticker).toBe("AAPL");
     });
 
-    it("getConflicts returns empty on missing array", async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    it("getConflicts accepts explicit empty rows and rejects a missing envelope", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ conflicts: [] }) });
       const client = mockClient(mockFetch);
       const result = await client.getConflicts();
       expect(result).toEqual([]);
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+      await expect(client.getConflicts()).rejects.toThrow("Invalid committee conflicts response");
     });
   });
 
   describe("streamUrl", () => {
-    it("returns a full SSE URL with encoded subscription id", () => {
+    it("returns a full SSE URL with encoded subscription id and optional stream token", () => {
       const client = new CongressTradeClient({ baseUrl: "https://custom.congress.trade" });
       const url = client.streamUrl("sub/1&2");
       expect(url).toBe("https://custom.congress.trade/api/stream?subscription=sub%2F1%262");
+      expect(client.streamUrl("sub/1&2", "secret ?& value")).toBe(
+        "https://custom.congress.trade/api/stream?subscription=sub%2F1%262&token=secret+%3F%26+value",
+      );
     });
   });
 });
@@ -377,6 +536,7 @@ describe("SseParser", () => {
     const parser = new SseParser();
     const result = parser.push("id: 12345\nevent: update\n\n");
     expect(result).toEqual([]);
+    expect(parser.push("data: later\n\n")).toEqual([{ id: "12345", data: "later" }]);
   });
 
   it("emits correct message when data is present", () => {
@@ -405,6 +565,24 @@ describe("SseParser", () => {
     expect(result).toEqual([{ id: "1", data: "hello" }]);
   });
 
+  it("handles CR-only line endings", () => {
+    const parser = new SseParser();
+    expect(parser.push("id: 1\rdata: hello\r\r")).toEqual([{ id: "1", data: "hello" }]);
+  });
+
+  it("handles CRLF split across push calls without creating a blank line", () => {
+    const parser = new SseParser();
+    expect(parser.push("data: first\r")).toEqual([]);
+    expect(parser.push("\nevent: update\r\ndata: second\r\n\r\n")).toEqual([
+      { event: "update", data: "first\nsecond" },
+    ]);
+  });
+
+  it("ignores a leading byte-order mark", () => {
+    const parser = new SseParser();
+    expect(parser.push("\uFEFFdata: hello\n\n")).toEqual([{ data: "hello" }]);
+  });
+
   it("strips leading space from field value", () => {
     const parser = new SseParser();
     const result = parser.push("data:  padded\n\n");
@@ -423,6 +601,11 @@ describe("SseParser", () => {
     expect(result).toEqual([{ event: "trade", data: '{"type":"P"}' }]);
   });
 
+  it("treats an empty event field as the default message event", () => {
+    const parser = new SseParser();
+    expect(parser.push("event:\ndata: hello\n\n")).toEqual([{ data: "hello" }]);
+  });
+
   it("handles id after data", () => {
     const parser = new SseParser();
     const result = parser.push("data: msg\ndata: body\nid: 99\n\n");
@@ -433,6 +616,38 @@ describe("SseParser", () => {
     const parser = new SseParser();
     const result = parser.push("data: first\n\ndata: second\n\n");
     expect(result).toEqual([{ data: "first" }, { data: "second" }]);
+  });
+
+  it("persists an event id until the server replaces or clears it", () => {
+    const parser = new SseParser();
+    expect(parser.push("id: 41\ndata: first\n\ndata: second\n\nid\ndata: third\n\n")).toEqual([
+      { id: "41", data: "first" },
+      { id: "41", data: "second" },
+      { id: "", data: "third" },
+    ]);
+  });
+
+  it("ignores event ids containing a null character", () => {
+    const parser = new SseParser();
+    expect(parser.push("id: safe\ndata: first\n\nid: bad\0id\ndata: second\n\n")).toEqual([
+      { id: "safe", data: "first" },
+      { id: "safe", data: "second" },
+    ]);
+  });
+
+  it("bounds incomplete lines and accumulated event data", () => {
+    const lineParser = new SseParser({ maxLineLength: 8 });
+    expect(() => lineParser.push("data: 123456789")).toThrow("SSE line exceeds 8 characters");
+    expect(lineParser.push("data: ok\n\n")).toEqual([{ data: "ok" }]);
+
+    const eventParser = new SseParser({ maxEventDataLength: 5 });
+    expect(() => eventParser.push("data: 123\ndata: 45\n\n"))
+      .toThrow("SSE event data exceeds 5 characters");
+  });
+
+  it("rejects invalid parser limits", () => {
+    expect(() => new SseParser({ maxLineLength: 0 })).toThrow("positive integer");
+    expect(() => new SseParser({ maxEventDataLength: 1.5 })).toThrow("positive integer");
   });
 
   it("ignores comments between data blocks", () => {

@@ -15,11 +15,11 @@
 // for backward compatibility with existing consumers that only need the current ticker.
 
 /** Continuous renames/rebrands: same listed entity, price history continues under the new ticker. */
-export const TICKER_RENAMES: Readonly<Record<string, string>> = {
+export const TICKER_RENAMES: Readonly<Record<string, string>> = Object.freeze({
   FB: "META", // Facebook, Inc. → Meta Platforms, Inc.; ticker change 2022-06-09, same CIK/listing.
   SQ: "XYZ", // Block, Inc. ticker change SQ → XYZ (2025); same entity, continuous listing.
   GEHCV: "GEHC", // GE HealthCare when-issued (GEHCV) → regular-way (GEHC) after the 2023 GE spin-off.
-};
+});
 
 /**
  * Delisting acquisitions: source ticker ceased trading in a takeover; its price series is
@@ -28,12 +28,12 @@ export const TICKER_RENAMES: Readonly<Record<string, string>> = {
  * removed from the immediate 2018-style acquirer (see TWX below). These targets are a stable
  * contract (existing consumers/tests depend on them); do not repoint them without a major bump.
  */
-export const TICKER_ACQUISITIONS: Readonly<Record<string, string>> = {
+export const TICKER_ACQUISITIONS: Readonly<Record<string, string>> = Object.freeze({
   BRCM: "AVGO", // Broadcom Corp (BRCM) acquired by Avago, closed 2016-02-01 (mixed cash+stock); BRCM delisted, Avago renamed itself Broadcom Ltd and continues as AVGO (AVGO is Avago's own series, not BRCM's).
   TWX: "WBD", // Time Warner (TWX) acquired by AT&T 2018 — TWX holders received AT&T (T) stock and TWX's series ended there. WBD is a DOWNSTREAM 2022 entity (AT&T's WarnerMedia spun off + merged with Discovery); curated as the current successor for display, NOT the direct 2018 successor.
   ATVI: "MSFT", // Activision Blizzard (ATVI) acquired by Microsoft 2023 (all-cash); ATVI delisted, holders received cash, not MSFT shares.
   RHT: "IBM", // Red Hat (RHT) acquired by IBM 2019 (all-cash); RHT delisted, holders received cash, not IBM shares.
-};
+});
 
 /**
  * Union of every curated ticker alias (renames + acquisitions), for IDENTITY/display resolution
@@ -45,24 +45,24 @@ export const TICKER_ACQUISITIONS: Readonly<Record<string, string>> = {
  * when the corporate-action class matters. Its key enumeration order (renames then acquisitions)
  * is NOT part of the contract — treat it as an unordered lookup map.
  */
-export const TICKER_ALIASES: Readonly<Record<string, string>> = {
+export const TICKER_ALIASES: Readonly<Record<string, string>> = Object.freeze({
   ...TICKER_RENAMES,
   ...TICKER_ACQUISITIONS,
-};
+});
 
 // ---- Market cap bucket thresholds ----
 
-export const MKT_CAP_THRESHOLDS = {
+export const MKT_CAP_THRESHOLDS = Object.freeze({
   MEGA: 200_000_000_000, // $200B+
   LARGE: 10_000_000_000, // $10B+
   MID: 2_000_000_000, // $2B+
   SMALL: 300_000_000, // $300M+
   MICRO: 50_000_000, // $50M+
-} as const;
+} as const);
 
 // ---- API paths ----
 
-export const API_PATHS = {
+export const API_PATHS = Object.freeze({
   HEALTH: "/api/health",
   TRANSACTIONS: "/api/transactions",
   STREAM: "/api/stream",
@@ -85,26 +85,26 @@ export const API_PATHS = {
   ADMIN_SECURITIES_IMPORT: "/api/admin/securities/import",
   EXPORT_BULK_SNAPSHOT: "/api/export/bulk-snapshot",
   SUBSCRIPTIONS: "/api/subscriptions",
-} as const;
+} as const);
 
 // ---- Analytics window presets ----
 
-export const WINDOW_PRESETS = [
+export const WINDOW_PRESETS = Object.freeze([
   "1d", "7d", "30d", "90d", "180d", "365d", "1825d", "all",
-] as const;
+] as const);
 
 export type Window = (typeof WINDOW_PRESETS)[number];
 
 // ---- Filing lag buckets ----
 
-export const LAG_BUCKETS = [
-  { label: "0-7d", max: 7 },
-  { label: "8-14d", max: 14 },
-  { label: "15-30d", max: 30 },
-  { label: "31-45d", max: 45 },
-  { label: "46-60d", max: 60 },
-  { label: "60d+", max: null },
-] as const;
+export const LAG_BUCKETS = Object.freeze([
+  Object.freeze({ label: "0-7d", max: 7 }),
+  Object.freeze({ label: "8-14d", max: 14 }),
+  Object.freeze({ label: "15-30d", max: 30 }),
+  Object.freeze({ label: "31-45d", max: 45 }),
+  Object.freeze({ label: "46-60d", max: 60 }),
+  Object.freeze({ label: "60d+", max: null }),
+] as const);
 
 // ---- Defaults ----
 
@@ -118,10 +118,10 @@ export const APP_B_ORIGIN_TAG = "app-b" as const;
 
 // ---- Events ----
 
-export const CONGRESS_EVENT_TYPES = [
+export const CONGRESS_EVENT_TYPES = Object.freeze([
   "congress.trade",
   "insider.update",
   "ref.upsert",
   "price.eod",
   "spx.eod",
-] as const;
+] as const);

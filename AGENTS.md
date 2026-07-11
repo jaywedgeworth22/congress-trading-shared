@@ -28,6 +28,7 @@ Run these after package changes when feasible:
 ```bash
 npm run typecheck
 npm run build
+npm run lint:package
 npm test
 npm audit
 npm run pack:dry

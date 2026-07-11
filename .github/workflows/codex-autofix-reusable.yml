@@ -47,19 +47,18 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  id-token: write
 
 jobs:
   autofix:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@e90deca47693f9457b72f2b53c17d7c445a87342 # v1
         # Routed to DeepSeek via its Anthropic-compatible endpoint to control cost:
         # claude-code-action drives the Claude Code CLI, which honors
         # ANTHROPIC_BASE_URL / _AUTH_TOKEN / _MODEL, so this bills the DeepSeek key

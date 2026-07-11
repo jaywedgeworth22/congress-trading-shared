@@ -8,6 +8,8 @@ export const UsageTelemetryMetricTypeSchema = z.enum([
   "health",
   "balance",
   "limit",
+  "quota_sync",
+  "credit_balance",
   // Recurring fixed-cost events materialized by the API Usage Monitor
   // (subscription-materializer). Kept in the shared enum so producers can
   // validate before send; monitor already accepts this value.
@@ -48,20 +50,28 @@ export const UsageTelemetryLimitWindowSchema = z.enum([
 
 export const UsageTelemetryMetadataSchema = z.record(
   z.string(),
-  z.union([z.string(), z.number(), z.boolean(), z.null()]),
-);
+  z.union([z.string(), z.number().finite(), z.boolean(), z.null()]),
+).transform((metadata) => {
+  const clean: Record<string, string | number | boolean | null> = {};
+  for (const [rawKey, rawValue] of Object.entries(metadata).slice(0, 50)) {
+    const key = rawKey.trim().slice(0, 80);
+    if (!key) continue;
+    clean[key] = typeof rawValue === "string" ? rawValue.slice(0, 500) : rawValue;
+  }
+  return clean;
+});
 
 export const UsageTelemetryEventSchema = z.object({
-  sourceApp: z.string().min(1).max(80),
-  environment: z.string().min(1).max(80).optional(),
-  provider: z.string().min(1).max(80),
-  service: z.string().min(1).max(120).optional(),
+  sourceApp: z.string().trim().min(1).max(80),
+  environment: z.string().trim().min(1).max(80).optional(),
+  provider: z.string().trim().min(1).max(80),
+  service: z.string().trim().min(1).max(120).optional(),
   // Per-project attribution name. Resolved to Project.id on the monitor at
   // ingest. Deliberately NOT part of the idempotency basis — adding it there
   // would rekey existing events.
-  project: z.string().min(1).max(120).optional(),
-  label: z.string().min(1).max(160).optional(),
-  keyRef: z.string().min(1).max(160).optional(),
+  project: z.string().trim().min(1).max(120).optional(),
+  label: z.string().trim().min(1).max(160).optional(),
+  keyRef: z.string().trim().min(1).max(160).optional(),
   billingMode: UsageTelemetryBillingModeSchema.default("estimated"),
   metricType: UsageTelemetryMetricTypeSchema.default("usage"),
   quantity: z.number().finite().nonnegative().optional(),
@@ -71,13 +81,13 @@ export const UsageTelemetryEventSchema = z.object({
   credits: z.number().finite().nonnegative().optional(),
   limit: z.number().finite().nonnegative().optional(),
   limitWindow: UsageTelemetryLimitWindowSchema.optional(),
-  tier: z.string().min(1).max(80).optional(),
+  tier: z.string().trim().min(1).max(80).optional(),
   confidence: UsageTelemetryConfidenceSchema.default("estimated"),
   windowStart: z.string().datetime().optional(),
   windowEnd: z.string().datetime().optional(),
   occurredAt: z.string().datetime().optional(),
   metadata: UsageTelemetryMetadataSchema.optional(),
-  idempotencyKey: z.string().min(1).max(200).optional(),
+  idempotencyKey: z.string().trim().min(1).max(200).optional(),
 });
 
 export const UsageTelemetryBatchSchema = z.object({
@@ -87,6 +97,7 @@ export const UsageTelemetryBatchSchema = z.object({
 export const UsageTelemetryIngestResponseSchema = z.object({
   ok: z.boolean(),
   accepted: z.number().int().nonnegative(),
+  ignoredPruned: z.number().int().nonnegative().optional(),
 });
 
 export type UsageTelemetryMetricType = z.infer<typeof UsageTelemetryMetricTypeSchema>;
@@ -94,7 +105,9 @@ export type UsageTelemetryUnit = z.infer<typeof UsageTelemetryUnitSchema>;
 export type UsageTelemetryBillingMode = z.infer<typeof UsageTelemetryBillingModeSchema>;
 export type UsageTelemetryConfidence = z.infer<typeof UsageTelemetryConfidenceSchema>;
 export type UsageTelemetryLimitWindow = z.infer<typeof UsageTelemetryLimitWindowSchema>;
+export type UsageTelemetryEventInput = z.input<typeof UsageTelemetryEventSchema>;
 export type UsageTelemetryEvent = z.infer<typeof UsageTelemetryEventSchema>;
+export type UsageTelemetryBatchInput = z.input<typeof UsageTelemetryBatchSchema>;
 export type UsageTelemetryBatch = z.infer<typeof UsageTelemetryBatchSchema>;
 export type UsageTelemetryIngestResponse = z.infer<typeof UsageTelemetryIngestResponseSchema>;
 
@@ -162,6 +175,8 @@ export interface UsageTelemetryClientOptions {
   baseUrl: string;
   token: string;
   fetchImpl?: typeof fetch;
+  /** Reject events without a caller-supplied identity instead of relying on the five-field fallback. */
+  requireExplicitIdempotencyKey?: boolean;
 }
 
 export function createUsageTelemetryClient(options: UsageTelemetryClientOptions) {
@@ -169,8 +184,14 @@ export function createUsageTelemetryClient(options: UsageTelemetryClientOptions)
   const url = usageMonitorIngestUrl(options.baseUrl);
 
   return {
-    async send(events: UsageTelemetryEvent[]): Promise<UsageTelemetryIngestResponse> {
+    async send(events: UsageTelemetryEventInput[]): Promise<UsageTelemetryIngestResponse> {
       const parsed = UsageTelemetryBatchSchema.parse({ events });
+      if (options.requireExplicitIdempotencyKey) {
+        const missingIndex = parsed.events.findIndex((event) => !event.idempotencyKey);
+        if (missingIndex >= 0) {
+          throw new Error(`Usage telemetry event ${missingIndex} requires an explicit idempotencyKey`);
+        }
+      }
       const body: UsageTelemetryBatch = {
         events: await Promise.all(
           parsed.events.map(async (event) => {

@@ -28,6 +28,7 @@ export type {
 
 export type {
   CongressTransaction,
+  CongressTransactionRead,
   TransactionsPage,
   TransactionsQuery,
   BundleResponse,
@@ -39,7 +40,9 @@ export type {
   FundamentalRow,
   AnalystRow,
   InsiderRow,
+  InsiderReadRow,
   ShortVolumeRow,
+  ShortVolumeReadRow,
 } from "./schemas";
 
 // ---- Analytics types ----

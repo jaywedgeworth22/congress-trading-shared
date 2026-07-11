@@ -11,12 +11,13 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 20
           cache: npm
@@ -27,67 +28,66 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Test effort issue reconciliation
+        run: python3 -m unittest scripts/test_sync_effort_issues.py
+
       - name: Run tests
         run: npm test -- --coverage
 
       - name: Build
         run: npm run build
 
+      - name: Validate package exports
+        run: npm run lint:package
+
       - name: Audit
         run: npm audit
+
+      - name: Verify dependency signatures
+        run: npm audit signatures
 
       - name: Package dry run
         run: npm run pack:dry
 
-  smoke-install:
-    needs: verify
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Pack package
-        id: pack
+      - name: Clean tokenless Git install smoke
+        env:
+          INSTALL_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          INSTALL_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          PACK_FILE=$(npm pack | tail -n 1)
-          echo "PACK_FILE=${PACK_FILE}" >> $GITHUB_OUTPUT
-          cp "$PACK_FILE" /tmp/package.tgz
+          scratch="$(mktemp -d)"
+          trap 'rm -rf "$scratch"' EXIT
+          mkdir -p "$scratch/home" "$scratch/cache"
+          unset NODE_AUTH_TOKEN NPM_TOKEN GH_PACKAGES_TOKEN GITHUB_TOKEN
+          export HOME="$scratch/home" npm_config_cache="$scratch/cache"
+          npm install --prefix "$scratch" \
+            "git+https://github.com/${INSTALL_REPOSITORY}.git#${INSTALL_REF}"
 
-      - name: Smoke test CJS and ESM installs
-        run: |
-          mkdir -p /tmp/smoke-test
-          cd /tmp/smoke-test
-          npm init -y
-          
-          # Install the local packed tgz
-          npm install /tmp/package.tgz
-          
-          # Create CJS test script
-          cat << 'EOF' > test-cjs.cjs
-          const { TICKER_RENAMES, createCongressEvent } = require('@jaywedgeworth22/congress-trading-shared');
-          if (!TICKER_RENAMES) throw new Error('TICKER_RENAMES is missing in CJS');
-          if (typeof createCongressEvent !== 'function') throw new Error('createCongressEvent is not a function in CJS');
-          console.log('CJS import smoke test passed!');
+          cd "$scratch"
+          node -e "const p=require('@jaywedgeworth22/congress-trading-shared'); if(typeof p.createCongressEvent!=='function') process.exit(1)"
+          node --input-type=module -e "import('@jaywedgeworth22/congress-trading-shared').then(p=>{if(typeof p.createCongressEvent!=='function')process.exit(1)})"
+
+          npm install --ignore-scripts zod@3.25.76
+          node <<'EOF'
+          const path = require('node:path');
+          const root = require('zod/package.json');
+          const shared = require('@jaywedgeworth22/congress-trading-shared');
+          const sharedRoot = path.join(path.dirname(require.resolve('@jaywedgeworth22/congress-trading-shared')), '..');
+          const nested = require(path.join(sharedRoot, 'node_modules/zod/package.json'));
+          if (!root.version.startsWith('3.') || !nested.version.startsWith('4.')) process.exit(1);
+          if (shared.SecurityRefSchema.safeParse({}).success) process.exit(1);
           EOF
-          
-          # Create ESM test script
-          cat << 'EOF' > test-esm.mjs
-          import { TICKER_RENAMES, createCongressEvent } from '@jaywedgeworth22/congress-trading-shared';
-          if (!TICKER_RENAMES) throw new Error('TICKER_RENAMES is missing in ESM');
-          if (typeof createCongressEvent !== 'function') throw new Error('createCongressEvent is not a function in ESM');
-          console.log('ESM import smoke test passed!');
+
+          cat > consumer.mts <<'EOF'
+          import { createCongressEvent, type UsageTelemetryEventInput } from '@jaywedgeworth22/congress-trading-shared';
+          const input: UsageTelemetryEventInput = { sourceApp: 'ci', provider: 'ci' };
+          createCongressEvent('ci.smoke', input);
           EOF
-          
-          # Run the smoke scripts
-          node test-cjs.cjs
-          node test-esm.mjs
+          cat > consumer.cts <<'EOF'
+          import { createCongressEvent, type UsageTelemetryEventInput } from '@jaywedgeworth22/congress-trading-shared';
+          const input: UsageTelemetryEventInput = { sourceApp: 'ci', provider: 'ci' };
+          createCongressEvent('ci.smoke', input);
+          EOF
+          "$GITHUB_WORKSPACE/node_modules/.bin/tsc" --noEmit --strict \
+            --target ES2022 --module NodeNext --moduleResolution NodeNext consumer.mts consumer.cts
+          "$GITHUB_WORKSPACE/node_modules/.bin/tsc" --noEmit --strict \
+            --target ES2022 --module ESNext --moduleResolution Bundler consumer.mts
