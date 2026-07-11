@@ -35,27 +35,20 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 ## Completed
 - **Codex autofix reusable workflow: migrate from Anthropic to DeepSeek (MONET, S)** —
   COMPLETED 2026-07-10. Merged PR
-  [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`) +
-  docs follow-up [#142](https://github.com/jaywedgeworth22/congress-trading-shared/pull/142).
-  The Anthropic key funding the shared Codex autofix workflow was deleted, breaking the loop for
+  [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`). The
+  Anthropic key funding the shared Codex autofix workflow was deleted, breaking the loop for
   every caller repo. Renamed the required `workflow_call` secret `ANTHROPIC_API_KEY` →
   `DEEPSEEK_API_KEY` (`GH_PAT` stays optional) and pointed `anthropics/claude-code-action@v1` at
   DeepSeek's Anthropic-compatible endpoint via `env.ANTHROPIC_BASE_URL` / `_AUTH_TOKEN` /
-  `_MODEL=deepseek-v4-flash` / `_SMALL_FAST_MODEL`. Codex review caught a real regression: the
-  action's buffered-inline-comment classifier hardcodes `https://api.anthropic.com`, ignoring
-  `ANTHROPIC_BASE_URL` — with a DeepSeek key it would 401 and fall back to posting every
-  buffered comment unfiltered. Verified against the action's actual source before fixing;
-  resolved via `classify_inline_comments: "false"` rather than trusting a classifier that can't
-  authenticate. Companion caller-side PR
+  `_MODEL=deepseek-v4-flash` / `_SMALL_FAST_MODEL`. Codex review caught a real regression:
+  the action's buffered-inline-comment classifier (`post-buffered-inline-comments.ts`) hardcodes
+  `https://api.anthropic.com`, ignoring `ANTHROPIC_BASE_URL` — with a DeepSeek key it would 401
+  and fall back to posting every buffered comment unfiltered. Verified against the action's
+  actual source before fixing; resolved by setting `classify_inline_comments: "false"` rather
+  than relying on a classifier that can't authenticate. Companion caller-side PR
   [Congress.Trade#258](https://github.com/jaywedgeworth22/Congress.Trade/pull/258) merged and
   deployed to prod (health-checked OK). If DeepSeek returns "model not found", swap
-  `deepseek-v4-flash` → `deepseek-chat`.
-- **Resolve shared Copilot review findings from PR #125 (CODEX, S) — 2026-07-08.**
-  PR #137 merged to `main`, resolving the four still-active Copilot review threads from merged
-  PR #125. Patched `scripts/slack-sync.sh`, `.codex/maintenance.sh`, and
-  `.github/workflows/codex-autofix-reusable.yml`. Verified shell syntax, workflow YAML,
-  no-token maintenance/helper behavior, `npm ci`, `npm run typecheck`, `npm test` (337 passed),
-  `npm run build`, and `git diff --check`.
+  `deepseek-v4-flash` → `deepseek-chat` in `codex-autofix-reusable.yml`.
 - **Retire duplicate API client + stream parser in Socratic.Trade (CURSOR, M) — 2026-07-06.**
   Replaced local `getJson` wrapper + manual URL construction in `congress-trade-client.ts` and
   local `SseParser` class in `congress-stream.ts` with `CongressTradeClient` and `SseParser` from
@@ -164,6 +157,24 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
+- **Portable operation-guard rejection contract (AG, owner-directed, S) — READY PR #144.**
+  Support Socratic.Trade's admin abuse-control work and future Congress.Trade consumers with an
+  additive shared Zod/TypeScript contract plus pure builders/status mapping for stable
+  `rate_limited` (HTTP 429; operation + retryAfterSeconds) and `operation_in_flight` (HTTP 409;
+  operation + activeOperation) rejections. Reject malformed/negative retry values; export from the
+  package barrel; add schema/builder tests and release notes. Keep runtime maps, auth identity,
+  and enforcement app-local. Version bumped to 1.5.0. Gate receipts: vitest 351 tests pass, tsc clean, build clean.
+- **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
+  Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
+  `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
+  matches api-usage-monitor. Paired consumer PRs: Congress.Trade (retire brackets/tickerNormalize/
+  analytics/enrichment dups + SharePayload row validation + createCongressEvent), Socratic.Trade
+  (CONGRESS_EVENT_TYPES + SharePayload type + dead imports), api-usage-monitor (restore 5-field
+  idempotency + shared hash vectors). Verified: 338 shared tests pass.
+- **Resolve shared Copilot review findings from PR #125 (CODEX, S) — started 2026-07-08.**
+  Patch `scripts/slack-sync.sh`, `.codex/maintenance.sh`, and
+  `.github/workflows/codex-autofix-reusable.yml` for the four still-active Copilot review threads
+  on merged PR #125; branch `codex/bot-thread-cleanup`.
 - **Consolidate usage telemetry clients in both consumer apps (CURSOR, M) — started 2026-07-06, completed 2026-07-06.**
   Refactored Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`)
   to retire local telemetry definitions and import the shared `createUsageTelemetryClient` and
@@ -219,15 +230,6 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - Codex global coordination + fleet monitoring setup (Codex, shared `/Users/jay/apps`
   infra) — include this package in the standardized Codex bootstrap/audit path;
   no package code changes in this repo.
-- **Portable operation-guard rejection contract (AG, owner-directed, S) — IN PROGRESS 2026-07-11.**
-  Support Socratic.Trade's admin abuse-control work and future Congress.Trade consumers with an
-  additive shared Zod/TypeScript contract plus pure builders/status mapping for stable
-  `rate_limited` (HTTP 429; operation + retryAfterSeconds) and `operation_in_flight` (HTTP 409;
-  operation + activeOperation) rejections. Reject malformed/negative retry values; export from the
-  package barrel; add schema/builder tests and patch-version/changelog/release notes. Keep runtime
-  maps, auth identity, and enforcement app-local. Assigned to Antigravity via #agent-sync; AG must
-  mirror this row into `docs/EFFORT-LOG.md`, claim an isolated branch/worktree, and open a READY PR
-  only (no merge/tag) before consumer adoption.
 
 ## Planned / Reserved
 - CI standard adoption (cross-app, Claude) — RESERVED: 5-line caller workflow consuming the Socratic.Trade reusable verify gate + Mac runner registration. Blocked by: hub repo's reusable `workflow_call` verify gate not built yet — `claude/ci-actions-efficiency` landed WITHOUT producing it (docs-only fast path); current dependency is Socratic.Trade PR #372 (`claude/ci-hybrid-runner-verify`, open) + follow-on reusable entry point. _2026-07-05 (CLAUDE): blocker re-verified and updated._

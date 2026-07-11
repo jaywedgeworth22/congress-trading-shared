@@ -3,14 +3,14 @@ import { z } from "zod";
 export const OperationGuardRateLimitedSchema = z.object({
   code: z.literal("rate_limited"),
   operation: z.string().min(1),
-  retryAfterSeconds: z.number().int().nonnegative(),
+  retryAfterSeconds: z.number().int().positive(),
 });
 export type OperationGuardRateLimited = z.infer<typeof OperationGuardRateLimitedSchema>;
 
 export const OperationGuardInFlightSchema = z.object({
   code: z.literal("operation_in_flight"),
   operation: z.string().min(1),
-  activeOperation: z.string().min(1).optional(),
+  activeOperation: z.string().min(1),
 });
 export type OperationGuardInFlight = z.infer<typeof OperationGuardInFlightSchema>;
 
@@ -28,7 +28,7 @@ export function buildRateLimitedRejection(operation: string, retryAfterSeconds: 
   });
 }
 
-export function buildOperationInFlightRejection(operation: string, activeOperation?: string): OperationGuardInFlight {
+export function buildOperationInFlightRejection(operation: string, activeOperation: string): OperationGuardInFlight {
   return OperationGuardInFlightSchema.parse({
     code: "operation_in_flight",
     operation,
