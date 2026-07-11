@@ -42,6 +42,11 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Enable a required-status-check ruleset on main gating on the CI verify job (AG, S) — COMPLETED 2026-07-11.**
+  Created a `main-protection` ruleset via GitHub API mirroring the Socratic.Trade pattern.
+  Blocked deletion and non-fast-forward pushes.
+  Required Pull Requests for `main`.
+  Required the `verify` status check to pass.
 - **Codex autofix reusable workflow: migrate from Anthropic to DeepSeek (MONET, S)** —
   COMPLETED 2026-07-10. Merged PR
   [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`). The
@@ -274,12 +279,6 @@ locks — re-negotiate in #agent-sync._
   open PRs — a single point of failure. The monet commit is stacked on cursor's unpushed tip so
   the two must land in sequence; MONET's row already says owner push/PR/tag pending. This also
   lets the effort-issues sync close open issues #17-#23.)_
-- **Enable a required-status-check ruleset on main gating on the CI verify job (CLAUDE, S)** —
-  Repo has no rulesets (`[]`) and no classic branch protection (404) — add a ruleset requiring the
-  ci.yml verify job (and requiring PRs) on main, mirroring the Socratic.Trade pattern. _(why now:
-  verified this session — CI is purely advisory today; anyone can merge red or push directly to
-  main. Becomes materially important the moment tests enter CI, and cheap to do now that the fleet
-  already runs this pattern in the other two repos.)_
 - ~~**Add a tokenless git-install smoke job to CI (pack + install + CJS/ESM import) (CODEX, S)**~~ — _Moved to Completed 2026-07-06._
 - ~~**Add vitest coverage reporting with a minimum-threshold gate (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
 - ~~**Prune merged claude/* branches on origin (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
