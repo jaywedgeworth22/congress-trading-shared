@@ -10,3 +10,4 @@ export * from "./usageTelemetry";
 export * from "./client";
 export * from "./events";
 export * from "./brackets";
+export * from "./operationGuard";

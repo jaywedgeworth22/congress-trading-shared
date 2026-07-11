@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-07-11
+
+### Added
+- **Portable operation-guard rejection contract.** Added Zod schemas and pure builder functions (`buildRateLimitedRejection`, `buildOperationInFlightRejection`, `getOperationGuardHttpStatus`) for Socratic.Trade admin abuse controls and future consumers, yielding stable HTTP 429 (`rate_limited`) and HTTP 409 (`operation_in_flight`) responses.
+
 ## [1.4.2] — 2026-07-09
 
 ### Added
