@@ -3,6 +3,15 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
 
 ## Deployed
+- **Portable operation-guard rejection contract v1.5.0 (AG implementation, CODEX release coordination, owner-directed, S) — DEPLOYED 2026-07-11.**
+  Shared Zod/TypeScript builders and status mapping now define stable `rate_limited` (HTTP 429)
+  and `operation_in_flight` (HTTP 409) rejections while enforcement and HTTP adapters remain
+  app-local. PR #144 merged as `2222baeb`; release-hygiene PR #146 merged as `7a8dca7c` with green
+  main CI. Lightweight tag `v1.5.0` resolves to the contract commit `2222baeb`. Clean tokenless
+  HTTPS installs from both the merge SHA and tag report package 1.5.0 and pass CJS+ESM
+  builder/status smoke. The tag appeared concurrently during CODEX coordination and was preserved
+  at the correct contract commit; no force-retag and no registry publish. Socratic.Trade #1409 owns
+  the consumer adoption.
 - **v1.4.1 — 2026-07-06 (AG).** Released `v1.4.1` (tag `v1.4.1` pushed) containing:
   - Renamed remaining "Agentic Trading" references to "Socratic Trade" (PR #119).
   - Added Zod schemas for AmountBracket, Subscription, and SseMessage (PR #119).
@@ -33,17 +42,6 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
-- **Portable operation-guard rejection contract (AG implementation, CODEX release coordination, owner-directed, S) — MERGED PR #144; RELEASE IN PROGRESS.**
-  Support Socratic.Trade's admin abuse-control work and future Congress.Trade consumers with an
-  additive shared Zod/TypeScript contract plus pure builders/status mapping for stable
-  `rate_limited` (HTTP 429; operation + retryAfterSeconds) and `operation_in_flight` (HTTP 409;
-  operation + activeOperation) rejections. Reject malformed/negative retry values; export from the
-  package barrel; add schema/builder tests and release notes. Keep runtime maps, auth identity,
-  and enforcement app-local. Version bumped to 1.5.0. Gate receipts: vitest 351 tests pass, tsc clean, build clean.
-  PR #144 merged to `main` as `2222baeb` at 2026-07-11T16:01:53Z after green hosted checks and
-  zero unresolved current review threads. A clean tokenless HTTPS install from that merge SHA
-  reports package 1.5.0 and passes CJS+ESM rejection-builder/status smoke. Release-hygiene follow-up
-  corrects the changelog comparison links before the lightweight v1.5.0 tag; no registry publish.
 - **Codex autofix reusable workflow: migrate from Anthropic to DeepSeek (MONET, S)** —
   COMPLETED 2026-07-10. Merged PR
   [#140](https://github.com/jaywedgeworth22/congress-trading-shared/pull/140) (`f01bae3`). The
