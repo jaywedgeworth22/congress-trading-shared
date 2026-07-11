@@ -2,7 +2,7 @@
   "name": "@jaywedgeworth22/congress-trading-shared",
   "version": "1.5.0",
   "description": "Shared types, Zod schemas, constants, and utilities for Congress.Trade ↔ Socratic Trade cross-app integration",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=20.0.0"
   },
