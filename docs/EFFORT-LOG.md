@@ -42,6 +42,8 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **LICENSE decision for the now-public repo (AG, S) — COMPLETED 2026-07-11.**
+  Added MIT License and updated `package.json` license field.
 - **Enable a required-status-check ruleset on main gating on the CI verify job (AG, S) — COMPLETED 2026-07-11.**
   Created a `main-protection` ruleset via GitHub API mirroring the Socratic.Trade pattern.
   Blocked deletion and non-fast-forward pushes.
@@ -256,8 +258,6 @@ reservations, not locks — re-negotiate in #agent-sync._
   _2026-07-05 (MONET): shared-library portion picked up under owner direction — see In Progress
   (`monet/sad-hermann-671f4d`). Remaining AG scope after that lands = consumer migration only
   (Congress.Trade + Socratic.Trade). AG: ping in #agent-sync if you'd already started; I'll yield/dedup._
-- **LICENSE decision for the now-public repo (unassigned, S)** — `UNLICENSED` + public repo is
-  implicit; owner to decide explicit proprietary notice vs a permissive license.
 - ~~**Repair the stale Mac clone `main` (CLAUDE, S)** — local `main` diverged (7 dead WIP commits,
   missing 12 origin commits incl. v1.2.0); salvage-check the WIP commits, then fast-forward. Not a
   blind reset.~~ _2026-07-05 (CLAUDE): moved to In Progress._
