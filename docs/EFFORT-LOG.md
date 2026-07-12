@@ -3,6 +3,8 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
 
 ## Deployed
+- **Whole-package shared dependency audit and remediation (CODEX, L) — COMPLETED 2026-07-12.**
+  Shared v1.6.0 was released and consumed by Socratic.Trade and Congress.Trade.
 - **Portable operation-guard rejection contract v1.5.0 (AG implementation, CODEX release coordination, owner-directed, S) — DEPLOYED 2026-07-11.**
   Shared Zod/TypeScript builders and status mapping now define stable `rate_limited` (HTTP 429)
   and `operation_in_flight` (HTTP 409) rejections while enforcement and HTTP adapters remain
@@ -229,11 +231,6 @@ Completed occurrence.
   the v1.3.0 release-train checklist — see new Planned row below._
 
 ## In Progress
-- **Whole-package shared dependency audit and remediation (CODEX, L) — started 2026-07-11.**
-  Branch `codex/shared-dependency-audit-20260711`; audit portable-contract correctness,
-  package/export/install compatibility, CI/release/security hygiene, documentation/board truth,
-  and read-only integration evidence in Congress.Trade and Socratic.Trade. Substantiated findings
-  become distinct rows before fixes; consumer repositories remain read-only.
 - **Reject inverted STOCK Act ranges before canonical bracket snapping (CODEX, P0/S).**
   `nearestBracket(16_000, 14_000)` currently returns the `$1,001-$15,000` bracket because it
   checks the guessed maximum against a tier ceiling without checking that the minimum is below
