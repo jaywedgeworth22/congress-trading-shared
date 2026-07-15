@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-07-15
+
+### Added
+- `executive` value on `ChamberSchema` (and the derived `Chamber` type) for OGE Form 278-T
+  presidential/VP filers — the executive-branch analogue of congressional STOCK Act disclosures.
+  Every schema that references `ChamberSchema` (`TransactionsQuerySchema`, `ClientMemberSchema`,
+  `MemberLeaderSchema`, and the transaction read shapes) now accepts `"executive"`.
+
+### Changed
+- **Consumer note:** code with exhaustive `switch`/mapping logic over `Chamber` values must now
+  handle `"executive"` in addition to `"house"` and `"senate"`, and API consumers should expect
+  `chamber: "executive"` on read-side payloads.
+
 ## [1.6.0] — 2026-07-11
 
 ### Added
@@ -169,7 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package prepared for install via `prepare` build script and CI.
 - GitHub Actions CI pipeline (typecheck, build, audit).
 
-[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.7.1...v1.8.0
 [1.6.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.4.1...v1.5.0
 [1.4.2]: https://github.com/jaywedgeworth22/congress-trading-shared/commit/030d87e
