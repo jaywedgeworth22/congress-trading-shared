@@ -85,12 +85,15 @@ describe("ChamberSchema", () => {
   it("accepts valid chambers", () => {
     expect(ChamberSchema.safeParse("house").success).toBe(true);
     expect(ChamberSchema.safeParse("senate").success).toBe(true);
+    expect(ChamberSchema.safeParse("executive").success).toBe(true);
   });
 
   it("rejects invalid chambers", () => {
     expect(ChamberSchema.safeParse("congress").success).toBe(false);
     expect(ChamberSchema.safeParse("").success).toBe(false);
     expect(ChamberSchema.safeParse("HOUSE").success).toBe(false);
+    expect(ChamberSchema.safeParse("EXECUTIVE").success).toBe(false);
+    expect(ChamberSchema.safeParse("president").success).toBe(false);
   });
 });
 
@@ -1202,6 +1205,18 @@ describe("ClientMemberSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("accepts executive chamber for OGE 278-T filers", () => {
+    const result = ClientMemberSchema.safeParse({
+      id: "m2",
+      name: "Jane President",
+      chamber: "executive",
+      party: null,
+      state: null,
+      photoUrl: null,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("ClientAssetSchema", () => {
@@ -1451,6 +1466,12 @@ describe("TransactionsQuerySchema", () => {
   it("rejects malformed cursor strings", () => {
     expect(TransactionsQuerySchema.safeParse({ since: "42x" }).success).toBe(false);
     expect(TransactionsQuerySchema.safeParse({ since: "2024-01-01" }).success).toBe(false);
+  });
+
+  it("accepts executive chamber", () => {
+    expect(
+      TransactionsQuerySchema.safeParse({ chamber: "executive" }).success,
+    ).toBe(true);
   });
 
   it("rejects invalid chamber", () => {

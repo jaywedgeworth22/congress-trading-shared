@@ -11,7 +11,9 @@ export const IsoDateSchema = z.string().refine(isIsoDate, {
   message: "Expected a valid YYYY-MM-DD date",
 });
 
-export const ChamberSchema = z.enum(["house", "senate"]);
+// "executive" covers OGE Form 278-T presidential/VP filers — the
+// executive-branch analogue of congressional STOCK Act disclosures.
+export const ChamberSchema = z.enum(["house", "senate", "executive"]);
 export type Chamber = z.infer<typeof ChamberSchema>;
 
 export const PartyBucketSchema = z.enum(["D", "R", "O"]);
