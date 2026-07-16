@@ -269,3 +269,85 @@ export function mergeRefs<T extends Record<string, unknown>>(
   }
   return result as Partial<T>;
 }
+
+/** Standardize company name: title-case all-caps, normalize common suffixes, preserve key acronyms. */
+export function normalizeCompanyName(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let name = raw.trim();
+  if (!name) return null;
+
+  // Check if the name has no mixed casing (all uppercase or all lowercase)
+  const isAllUpper = !/[a-z]/.test(name);
+  const isAllLower = !/[A-Z]/.test(name);
+  if (isAllUpper || isAllLower) {
+    // Convert to title case (e.g. "CBS CORPORATION" -> "Cbs Corporation", "asml holdings" -> "Asml Holdings")
+    name = name.toLowerCase().replace(/(?:^|[\s\-\/])\w/g, (match) => match.toUpperCase());
+  }
+
+  // Token map for casing corrections and abbreviations (lowercase key -> exact casing replacement)
+  const TOKEN_MAP: Record<string, string> = {
+    // Suffixes
+    inc: "Inc.",
+    "inc.": "Inc.",
+    llc: "LLC",
+    "llc.": "LLC",
+    llp: "LLP",
+    "llp.": "LLP",
+    plc: "PLC",
+    "plc.": "PLC",
+    corp: "Corp.",
+    "corp.": "Corp.",
+    co: "Co.",
+    "co.": "Co.",
+    ltd: "Ltd.",
+    "ltd.": "Ltd.",
+    lp: "LP",
+    "lp.": "LP",
+    nv: "NV",
+    "nv.": "NV",
+    ag: "AG",
+    "ag.": "AG",
+    sa: "SA",
+    "sa.": "SA",
+    bv: "BV",
+    "bv.": "BV",
+    // Acronyms
+    cbs: "CBS",
+    ibm: "IBM",
+    att: "AT&T",
+    amd: "AMD",
+    bp: "BP",
+    kkr: "KKR",
+    msci: "MSCI",
+    nrg: "NRG",
+    pnc: "PNC",
+    ubs: "UBS",
+    etf: "ETF",
+    reit: "REIT",
+    usa: "USA",
+    sec: "SEC",
+    nyse: "NYSE",
+    nasdaq: "NASDAQ",
+    spdr: "SPDR",
+    tsmc: "TSMC",
+    asml: "ASML",
+  };
+
+  // Replace tokens case-insensitively using regex word boundary matching
+  name = name.replace(/\b([a-zA-Z&]+)(\.|\b)/g, (match, word, dot) => {
+    const key = (word + (dot || "")).toLowerCase();
+    const cleanKey = word.toLowerCase();
+    if (TOKEN_MAP[key]) {
+      return TOKEN_MAP[key];
+    }
+    if (TOKEN_MAP[cleanKey]) {
+      return TOKEN_MAP[cleanKey];
+    }
+    return match;
+  });
+
+  // Deduplicate double periods (e.g. "Inc.." -> "Inc.")
+  name = name.replace(/\.{2,}/g, ".");
+
+  return name.trim();
+}
