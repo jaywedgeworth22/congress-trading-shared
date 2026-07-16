@@ -546,4 +546,10 @@ describe("normalizeCompanyName", () => {
     expect(normalizeCompanyName("asml holdings")).toBe("ASML Holdings");
     expect(normalizeCompanyName("IBM CORP")).toBe("IBM Corp.");
   });
+
+  it("strips trailing state of incorporation suffixes", () => {
+    expect(normalizeCompanyName("TRACTOR SUPPLY CO /DE/")).toBe("Tractor Supply Co.");
+    expect(normalizeCompanyName("TRACTOR SUPPLY CO /DE")).toBe("Tractor Supply Co.");
+    expect(normalizeCompanyName("Flex /DE/ Class A")).toBe("Flex Class A");
+  });
 });

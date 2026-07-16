@@ -271,17 +271,24 @@ export function mergeRefs<T extends Record<string, unknown>>(
 }
 
 /** Standardize company name: title-case all-caps, normalize common suffixes, preserve key acronyms. */
-export function normalizeCompanyName(raw: string | null | undefined): string | null {
+export function normalizeCompanyName(raw: string | null | undefined, ticker?: string | null): string | null {
   if (!raw) return null;
   let name = raw.trim();
   if (!name) return null;
 
-  // Check if the name has no mixed casing (all uppercase or all lowercase)
-  const isAllUpper = !/[a-z]/.test(name);
-  const isAllLower = !/[A-Z]/.test(name);
-  if (isAllUpper || isAllLower) {
-    // Convert to title case (e.g. "CBS CORPORATION" -> "Cbs Corporation", "asml holdings" -> "Asml Holdings")
-    name = name.toLowerCase().replace(/(?:^|[\s\-\/])\w/g, (match) => match.toUpperCase());
+  // Strip state of incorporation suffix (e.g. "/DE/", "/DE", "/CA")
+  name = name.replace(/\s*\/\s*[a-zA-Z]{2}\s*(?:\/|\b)/gi, " ");
+  name = name.replace(/\s{2,}/g, " ").trim();
+
+  // 1. Remove trailing stock exchanges in parentheses (e.g. "(NYSE)", "(NASDAQ: AAPL)")
+  name = name.replace(/\s*\([A-Z]+(?:\s*:\s*[A-Z]+)?\)\s*$/i, "");
+
+  // 2. Remove trailing slash
+  name = name.replace(/\/\s*$/g, "");
+
+  // If the name is exactly the ticker (case-insensitive), just return the uppercase ticker.
+  if (ticker && name.toLowerCase() === ticker.trim().toLowerCase()) {
+    return ticker.toUpperCase();
   }
 
   // Token map for casing corrections and abbreviations (lowercase key -> exact casing replacement)
@@ -333,7 +340,69 @@ export function normalizeCompanyName(raw: string | null | undefined): string | n
     asml: "ASML",
   };
 
-  // Replace tokens case-insensitively using regex word boundary matching
+  const KEEP_UPPER = new Set([
+    "IBM",
+    "GE",
+    "CDW",
+    "AT&T",
+    "HP",
+    "AMD",
+    "LPL",
+    "ST",
+    "BEP",
+    "BWXT",
+    "LUV",
+    "TPR",
+    "SCI",
+    "WRB",
+    "ABT",
+    "FLEX",
+    "TSCO",
+  ]);
+
+  // 3. Word by word normalization
+  let wordIndex = 0;
+  name = name.replace(/[A-Za-z0-9&]+/g, (word) => {
+    wordIndex++;
+
+    // Check if the word matches the ticker (e.g. "Nvda" -> "NVDA")
+    if (ticker && word.toLowerCase() === ticker.toLowerCase()) {
+      return ticker.toUpperCase();
+    }
+
+    // If word is entirely uppercase
+    if (word.toUpperCase() === word && /[A-Z]/.test(word)) {
+      if (word.length <= 4 && !/[AEIOUY]/.test(word)) {
+        return word; // e.g. "LPL", "BWXT" - keep upper
+      }
+      if (KEEP_UPPER.has(word)) return word;
+
+      // Small words that shouldn't be capitalized in standard title case (unless first word)
+      if (["THE", "AND", "FOR", "OF", "IN", "ON", "AT", "TO"].includes(word)) {
+        return wordIndex === 1
+          ? word.charAt(0).toUpperCase() + word.substring(1).toLowerCase()
+          : word.toLowerCase();
+      }
+
+      // Title case it
+      return word.charAt(0).toUpperCase() + word.substring(1).toLowerCase();
+    }
+
+    // If word is entirely lowercase and > 1 char
+    if (word.toLowerCase() === word && word.length > 1 && /[a-z]/.test(word)) {
+      if (["the", "and", "for", "of", "in", "on", "at", "to"].includes(word)) {
+        return wordIndex === 1
+          ? word.charAt(0).toUpperCase() + word.substring(1).toLowerCase()
+          : word;
+      }
+      return word.charAt(0).toUpperCase() + word.substring(1);
+    }
+
+    return word;
+  });
+
+  // 4. Entity normalizations (case-insensitive)
+  // We use regex to specifically match entity boundaries and map them
   name = name.replace(/\b([a-zA-Z&]+)(\.|\b)/g, (match, word, dot) => {
     const key = (word + (dot || "")).toLowerCase();
     const cleanKey = word.toLowerCase();
@@ -346,7 +415,9 @@ export function normalizeCompanyName(raw: string | null | undefined): string | n
     return match;
   });
 
-  // Deduplicate double periods (e.g. "Inc.." -> "Inc.")
+  // Deduplicate double spaces and double periods
+  name = name.replace(/\s+([.,])/g, "$1");
+  name = name.replace(/\s{2,}/g, " ");
   name = name.replace(/\.{2,}/g, ".");
 
   return name.trim();
