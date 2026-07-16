@@ -276,6 +276,10 @@ export function normalizeCompanyName(raw: string | null | undefined): string | n
   let name = raw.trim();
   if (!name) return null;
 
+  // Strip state of incorporation suffix (e.g. "/DE/", "/DE", "/CA")
+  name = name.replace(/\s*\/\s*[a-zA-Z]{2}\s*(?:\/|\b)/gi, " ");
+  name = name.replace(/\s{2,}/g, " ").trim();
+
   // Check if the name has no mixed casing (all uppercase or all lowercase)
   const isAllUpper = !/[a-z]/.test(name);
   const isAllLower = !/[A-Z]/.test(name);
