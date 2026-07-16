@@ -551,5 +551,6 @@ describe("normalizeCompanyName", () => {
     expect(normalizeCompanyName("TRACTOR SUPPLY CO /DE/")).toBe("Tractor Supply Co.");
     expect(normalizeCompanyName("TRACTOR SUPPLY CO /DE")).toBe("Tractor Supply Co.");
     expect(normalizeCompanyName("Flex /DE/ Class A")).toBe("Flex Class A");
+    expect(normalizeCompanyName("Example /AG/ Holdings")).toBe("Example /AG/ Holdings");
   });
 });
