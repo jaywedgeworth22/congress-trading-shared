@@ -276,6 +276,22 @@ export function normalizeCompanyName(raw: string | null | undefined): string | n
   let name = raw.trim();
   if (!name) return null;
 
+  // Strip state of incorporation suffix (e.g. "/DE/", "/DE", "/CA") only if it matches a US state code
+  const STATES = new Set([
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+  ]);
+  name = name.replace(/\/([a-zA-Z]{2})(?:\/|\b)/g, (match, code) => {
+    if (STATES.has(code.toUpperCase())) {
+      return " ";
+    }
+    return match;
+  });
+  name = name.replace(/\s{2,}/g, " ").trim();
+
   // Check if the name has no mixed casing (all uppercase or all lowercase)
   const isAllUpper = !/[a-z]/.test(name);
   const isAllLower = !/[A-Z]/.test(name);
