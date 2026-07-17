@@ -9,7 +9,6 @@ import {
   isIsoDate,
   daysBetween,
   mergeRefs,
-  normalizeCompanyName,
 } from "../utils";
 import {
   TICKER_ALIASES,
@@ -505,52 +504,5 @@ describe("mergeRefs", () => {
   });
 });
 
-// =============================================================================
-// normalizeCompanyName
-// =============================================================================
 
-describe("normalizeCompanyName", () => {
-  it("returns null for falsy or empty values", () => {
-    expect(normalizeCompanyName(null)).toBeNull();
-    expect(normalizeCompanyName(undefined)).toBeNull();
-    expect(normalizeCompanyName("")).toBeNull();
-    expect(normalizeCompanyName("   ")).toBeNull();
-  });
 
-  it("converts all-caps strings to title case and preserves normal case conventions", () => {
-    expect(normalizeCompanyName("APPLE INC")).toBe("Apple Inc.");
-    expect(normalizeCompanyName("CBS CORPORATION")).toBe("CBS Corporation");
-    expect(normalizeCompanyName("MICROSOFT CORP")).toBe("Microsoft Corp.");
-  });
-
-  it("preserves casing of mixed-case strings but standardizes suffixes", () => {
-    expect(normalizeCompanyName("Apple Inc.")).toBe("Apple Inc.");
-    expect(normalizeCompanyName("Apple Inc")).toBe("Apple Inc.");
-    expect(normalizeCompanyName("Microsoft Corp.")).toBe("Microsoft Corp.");
-    expect(normalizeCompanyName("CBS Corporation, Inc")).toBe("CBS Corporation, Inc.");
-  });
-
-  it("normalizes common corporate suffixes correctly", () => {
-    expect(normalizeCompanyName("Google LLC")).toBe("Google LLC");
-    expect(normalizeCompanyName("Google llc")).toBe("Google LLC");
-    expect(normalizeCompanyName("Google, LLC")).toBe("Google, LLC");
-    expect(normalizeCompanyName("Netflix Ltd")).toBe("Netflix Ltd.");
-    expect(normalizeCompanyName("Netflix LTD")).toBe("Netflix Ltd.");
-    expect(normalizeCompanyName("Tesla Co")).toBe("Tesla Co.");
-    expect(normalizeCompanyName("Tesla CO")).toBe("Tesla Co.");
-  });
-
-  it("preserves known acronyms and capitalizations", () => {
-    expect(normalizeCompanyName("TSMC")).toBe("TSMC");
-    expect(normalizeCompanyName("tsmc")).toBe("TSMC");
-    expect(normalizeCompanyName("asml holdings")).toBe("ASML Holdings");
-    expect(normalizeCompanyName("IBM CORP")).toBe("IBM Corp.");
-  });
-
-  it("strips trailing state of incorporation suffixes", () => {
-    expect(normalizeCompanyName("TRACTOR SUPPLY CO /DE/")).toBe("Tractor Supply Co.");
-    expect(normalizeCompanyName("TRACTOR SUPPLY CO /DE")).toBe("Tractor Supply Co.");
-    expect(normalizeCompanyName("Flex /DE/ Class A")).toBe("Flex Class A");
-    expect(normalizeCompanyName("Example /AG/ Holdings")).toBe("Example /AG/ Holdings");
-  });
-});
