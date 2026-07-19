@@ -50,6 +50,13 @@ permissions:
 
 jobs:
   autofix:
+    # Intentionally kept on hosted runners (NOT migrated to the fleet self-hosted
+    # CI runners). This is a reusable workflow invoked cross-repo, so a
+    # `vars.*`-gated runs-on would resolve against the *caller's* variables, and
+    # the job itself runs claude-code-action (a code-writing agent doing network
+    # installs) — the worst fit to run beside production containers + a
+    # repo-scoped runner PAT on the shared box. Under a $0 hosted-minutes cap
+    # this autofix convenience loop would simply not start; that is accepted.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
