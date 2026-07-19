@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { CongressTradeClient } from "../client";
+import { CongressTradeClient, normalizeSecurityRef } from "../client";
+import { SecurityRefSchema } from "../schemas";
 
 function mockClient(fetchFn: typeof fetch) {
   return new CongressTradeClient({
@@ -324,6 +325,37 @@ describe("CongressTradeClient", () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ref: { ticker: 7 } }) });
       const client = mockClient(mockFetch);
       await expect(client.getRef("AAPL")).rejects.toThrow("Invalid market ref response");
+    });
+  });
+
+  describe("normalizeSecurityRef (exported for direct-parse consumers)", () => {
+    it("is exported so consumers bypassing the client can reuse it", () => {
+      expect(typeof normalizeSecurityRef).toBe("function");
+    });
+
+    it("lets a direct SecurityRefSchema.parse succeed on a real producer payload", () => {
+      // The live Congress.Trade REST producer omits sharesOutstanding entirely.
+      const { sharesOutstanding: _omitted, ...producerRef } = validRef;
+
+      // Without normalization a direct parse fails: the key is nullable but required.
+      expect(() => SecurityRefSchema.parse(producerRef)).toThrow();
+
+      // With it, the same payload validates and the field reads as null.
+      const parsed = SecurityRefSchema.parse(normalizeSecurityRef(producerRef));
+      expect(parsed.sharesOutstanding).toBeNull();
+      expect(parsed).toEqual(validRef);
+    });
+
+    it("preserves an explicit sharesOutstanding value instead of overwriting it", () => {
+      const withValue = { ...validRef, sharesOutstanding: 16_000_000 };
+      expect(normalizeSecurityRef(withValue)).toEqual(withValue);
+    });
+
+    it("returns non-object input unchanged", () => {
+      expect(normalizeSecurityRef(null)).toBeNull();
+      expect(normalizeSecurityRef(undefined)).toBeUndefined();
+      expect(normalizeSecurityRef("AAPL")).toBe("AAPL");
+      expect(normalizeSecurityRef([1, 2])).toEqual([1, 2]);
     });
   });
 
