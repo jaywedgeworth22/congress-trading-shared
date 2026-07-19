@@ -56,7 +56,24 @@ function parseResponse<T>(schema: z.ZodType<T>, value: unknown, label: string): 
   return result.data;
 }
 
-function normalizeSecurityRef(value: unknown): unknown {
+/**
+ * Backfill producer-omitted nullable metadata on a raw security-ref payload so
+ * it satisfies {@link SecurityRefSchema}.
+ *
+ * `SecurityRefSchema.sharesOutstanding` is `.nullable()` but NOT `.optional()`,
+ * so the key must be *present* — `null` is accepted, absent is not. The live
+ * Congress.Trade REST producer does not emit `sharesOutstanding` at all, which
+ * would otherwise make every strict ref/bundle read throw.
+ *
+ * `CongressTradeClient` applies this automatically on every read path. It is
+ * exported because consumers that bypass the client and call
+ * `SecurityRefSchema.parse(...)` directly need the same normalization — without
+ * it they hit `Invalid market ref response` on well-formed producer payloads.
+ *
+ * Non-object input (null, arrays, primitives) is returned unchanged so callers
+ * can pass raw JSON through before validating it.
+ */
+export function normalizeSecurityRef(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const ref = value as Record<string, unknown>;
   return "sharesOutstanding" in ref ? ref : { ...ref, sharesOutstanding: null };
