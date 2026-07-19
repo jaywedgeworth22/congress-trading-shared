@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] — 2026-07-18
+
+### Added
+- `callClassifier.ts`: shared call-classifier metadata contract for cross-provider request
+  enrichment and telemetry attribution. `CallClassifierContextSchema`/`CallClassifierContext`
+  describe a single outbound-call context (`sourceApp`, `environment?`, `service?`, `feature?`,
+  `keyRef?`, `gitSha?`, `user?`, `sessionId?`). Two pure builders project it into the shapes
+  producers need: `openrouterRequestEnrichment(ctx)` returns fields to merge into an OpenRouter
+  completions request body — top-level `user`/`session_id` plus a **flat** `trace` object
+  carrying the classifier keys directly (`trace: { sourceApp, environment?, service?, feature?,
+  keyRef?, gitSha? }`; per OpenRouter's Broadcast docs `trace` itself is the arbitrary-metadata
+  object, so there is no `metadata` sub-object and never a bare top-level `metadata` field) —
+  and `telemetryEventClassifier(ctx)` returns the same classifier keys as a flat string map for
+  a pushed `UsageTelemetryEvent`'s `metadata` field. `buildCallClassifier(ctx)` returns both
+  shapes at once. All three omit undefined optional keys. Static classifier fields (`sourceApp`,
+  `environment`, `service`, `feature`, `keyRef`, `gitSha`) throw on an invalid/blank value
+  (deploy-time constants — fail fast); the runtime-dynamic `user`/`sessionId` (max 128 chars,
+  OpenRouter's documented limit) are instead omitted when blank/whitespace-only so a per-call
+  dynamic value can never break a paid LLM request.
+- `UsageTelemetryEventSchema`: optional `providerRequestId` (string, max 200) for the
+  provider-side call/generation id (e.g. OpenRouter's `id`), enabling monitor-side spend
+  verification against the provider's own record.
+
+### Changed
+- **Consumer note:** `deriveUsageTelemetryIdempotencyKey`'s basis is unchanged —
+  `providerRequestId` is deliberately excluded, matching the existing `project` field's
+  precedent. Idempotency keys for existing/replayed events are byte-identical before and after
+  this release.
+
 ## [1.8.0] — 2026-07-15
 
 ### Added
