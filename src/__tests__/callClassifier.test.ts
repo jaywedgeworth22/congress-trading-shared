@@ -38,26 +38,48 @@ describe("CallClassifierContextSchema", () => {
     expect(CallClassifierContextSchema.safeParse({ ...fullCtx, sourceApp: "   " }).success).toBe(false);
   });
 
-  it("rejects a blank optional field instead of silently dropping it", () => {
+  it("rejects a blank optional STATIC field instead of silently dropping it", () => {
     expect(CallClassifierContextSchema.safeParse({ ...fullCtx, environment: "" }).success).toBe(false);
+  });
+
+  it("collapses blank runtime-dynamic user/sessionId to absent instead of rejecting", () => {
+    const result = CallClassifierContextSchema.safeParse({ ...fullCtx, user: "", sessionId: "   " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.user).toBeUndefined();
+      expect(result.data.sessionId).toBeUndefined();
+    }
+  });
+
+  it("caps user and sessionId at 128 chars (OpenRouter's documented limit)", () => {
+    expect(
+      CallClassifierContextSchema.safeParse({ ...fullCtx, user: "x".repeat(128) }).success,
+    ).toBe(true);
+    expect(
+      CallClassifierContextSchema.safeParse({ ...fullCtx, user: "x".repeat(129) }).success,
+    ).toBe(false);
+    expect(
+      CallClassifierContextSchema.safeParse({ ...fullCtx, sessionId: "x".repeat(128) }).success,
+    ).toBe(true);
+    expect(
+      CallClassifierContextSchema.safeParse({ ...fullCtx, sessionId: "x".repeat(129) }).success,
+    ).toBe(false);
   });
 });
 
 describe("openrouterRequestEnrichment", () => {
-  it("shapes a fully-populated context into trace.metadata + top-level user/session_id", () => {
+  it("shapes a fully-populated context into a flat trace + top-level user/session_id", () => {
     const result = openrouterRequestEnrichment(fullCtx);
     expect(result).toEqual({
       user: "doc-job-42",
       session_id: "run-2026-07-18",
       trace: {
-        metadata: {
-          sourceApp: "congress-trade",
-          environment: "production",
-          service: "extraction-worker",
-          feature: "openrouter-vision-extract",
-          keyRef: "openrouter-primary",
-          gitSha: "abc1234",
-        },
+        sourceApp: "congress-trade",
+        environment: "production",
+        service: "extraction-worker",
+        feature: "openrouter-vision-extract",
+        keyRef: "openrouter-primary",
+        gitSha: "abc1234",
       },
     });
   });
@@ -67,16 +89,27 @@ describe("openrouterRequestEnrichment", () => {
     expect("metadata" in result).toBe(false);
   });
 
+  it("carries classifier fields flat in trace with no metadata sub-object", () => {
+    const result = openrouterRequestEnrichment(fullCtx);
+    expect("metadata" in result.trace).toBe(false);
+    expect(result.trace.sourceApp).toBe("congress-trade");
+    expect(result.trace.environment).toBe("production");
+    expect(result.trace.service).toBe("extraction-worker");
+    expect(result.trace.feature).toBe("openrouter-vision-extract");
+    expect(result.trace.keyRef).toBe("openrouter-primary");
+    expect(result.trace.gitSha).toBe("abc1234");
+  });
+
   it("omits undefined optional keys instead of serializing them as undefined/null", () => {
     const result = openrouterRequestEnrichment({ sourceApp: "congress-trade" });
-    expect(result).toEqual({ trace: { metadata: { sourceApp: "congress-trade" } } });
+    expect(result).toEqual({ trace: { sourceApp: "congress-trade" } });
     expect("user" in result).toBe(false);
     expect("session_id" in result).toBe(false);
-    expect("environment" in result.trace.metadata).toBe(false);
-    expect("service" in result.trace.metadata).toBe(false);
-    expect("feature" in result.trace.metadata).toBe(false);
-    expect("keyRef" in result.trace.metadata).toBe(false);
-    expect("gitSha" in result.trace.metadata).toBe(false);
+    expect("environment" in result.trace).toBe(false);
+    expect("service" in result.trace).toBe(false);
+    expect("feature" in result.trace).toBe(false);
+    expect("keyRef" in result.trace).toBe(false);
+    expect("gitSha" in result.trace).toBe(false);
   });
 
   it("omits only the missing optional keys when some are present", () => {
@@ -87,13 +120,31 @@ describe("openrouterRequestEnrichment", () => {
     });
     expect(result).toEqual({
       user: "doc-job-42",
-      trace: { metadata: { sourceApp: "congress-trade", environment: "production" } },
+      trace: { sourceApp: "congress-trade", environment: "production" },
     });
     expect("session_id" in result).toBe(false);
   });
 
-  it("throws on an invalid context", () => {
+  it("omits blank/whitespace-only user and sessionId instead of throwing (runtime-dynamic)", () => {
+    const blankUser = openrouterRequestEnrichment({ sourceApp: "congress-trade", user: "" });
+    expect("user" in blankUser).toBe(false);
+    expect(blankUser).toEqual({ trace: { sourceApp: "congress-trade" } });
+
+    const whitespaceBoth = openrouterRequestEnrichment({
+      sourceApp: "congress-trade",
+      user: "   ",
+      sessionId: "  \t ",
+    });
+    expect("user" in whitespaceBoth).toBe(false);
+    expect("session_id" in whitespaceBoth).toBe(false);
+    expect(whitespaceBoth).toEqual({ trace: { sourceApp: "congress-trade" } });
+  });
+
+  it("still throws on a blank STATIC classifier field (deploy-time constant)", () => {
     expect(() => openrouterRequestEnrichment({ sourceApp: "" })).toThrow();
+    expect(() =>
+      openrouterRequestEnrichment({ sourceApp: "congress-trade", environment: "  " }),
+    ).toThrow();
   });
 
   it("JSON round-trips the produced body without undefined leaking through", () => {
@@ -120,6 +171,15 @@ describe("telemetryEventClassifier", () => {
 
   it("omits undefined optional keys", () => {
     const result = telemetryEventClassifier({ sourceApp: "congress-trade" });
+    expect(result).toEqual({ sourceApp: "congress-trade" });
+  });
+
+  it("omits blank/whitespace-only user and sessionId instead of throwing (runtime-dynamic)", () => {
+    const result = telemetryEventClassifier({
+      sourceApp: "congress-trade",
+      user: "",
+      sessionId: "   ",
+    });
     expect(result).toEqual({ sourceApp: "congress-trade" });
   });
 
