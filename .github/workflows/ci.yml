@@ -76,7 +76,7 @@ jobs:
           node -e "const p=require('@jaywedgeworth22/congress-trading-shared'); if(typeof p.createCongressEvent!=='function') process.exit(1)"
           node --input-type=module -e "import('@jaywedgeworth22/congress-trading-shared').then(p=>{if(typeof p.createCongressEvent!=='function')process.exit(1)})"
 
-          npm install --ignore-scripts zod@3.25.76
+          npm install --ignore-scripts zod@^4.4.3
           node <<'EOF'
           const path = require('node:path');
           const root = require('zod/package.json');
