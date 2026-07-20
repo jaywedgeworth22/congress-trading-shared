@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-07-19
+
+### Added
+- `client.ts`: `normalizeSecurityRef(value: unknown): unknown` is now **exported**. It backfills
+  producer-omitted `sharesOutstanding` (as `null`) on a raw security-ref payload so it satisfies
+  `SecurityRefSchema`. `SecurityRefSchema.sharesOutstanding` is `.nullable()` but **not**
+  `.optional()`, so the key must be *present* — `null` is accepted, absent is not — while the live
+  Congress.Trade REST producer (`mapSecurityRef`) never emits the field. `CongressTradeClient`
+  already applied this internally on every read path (`getRef`/`getRefs`/`getBundle`), but the
+  helper was module-private, so consumers calling `SecurityRefSchema.parse(...)` **directly** hit
+  `Invalid market ref response` on well-formed producer payloads with no supported workaround.
+  No behaviour change to the client — same implementation, same call sites; this is purely
+  additive to the public surface. Non-object input (null, arrays, primitives) passes through
+  unchanged, and an explicit `sharesOutstanding` value is never overwritten.
+
+### Changed
+- `@types/node` re-pinned to `^20.19.9` to match `engines.node` (`>=20.0.0`). The package had been
+  compiling against `@types/node` 26.x, type-checking the public surface against APIs absent from
+  the oldest supported runtime. A Dependabot `ignore` for `@types/node`
+  `version-update:semver-major` now prevents the floor from silently drifting again.
+  Development-only; no runtime or consumer-facing effect.
+
 ## [1.10.0] — 2026-07-18
 
 ### Added
@@ -211,7 +233,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package prepared for install via `prepare` build script and CI.
 - GitHub Actions CI pipeline (typecheck, build, audit).
 
-[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.10.0...v1.11.0
+[1.10.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.9.0...v1.10.0
 [1.8.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.7.1...v1.8.0
 [1.6.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.4.1...v1.5.0
