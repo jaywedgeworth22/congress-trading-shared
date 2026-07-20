@@ -76,15 +76,22 @@ jobs:
           node -e "const p=require('@jaywedgeworth22/congress-trading-shared'); if(typeof p.createCongressEvent!=='function') process.exit(1)"
           node --input-type=module -e "import('@jaywedgeworth22/congress-trading-shared').then(p=>{if(typeof p.createCongressEvent!=='function')process.exit(1)})"
 
-          npm install --ignore-scripts zod@3.25.76
+          npm install --ignore-scripts zod@^4.4.3
           node <<'EOF'
           const path = require('node:path');
           const root = require('zod/package.json');
           const shared = require('@jaywedgeworth22/congress-trading-shared');
           const sharedRoot = path.join(path.dirname(require.resolve('@jaywedgeworth22/congress-trading-shared')), '..');
-          const nested = require(path.join(sharedRoot, 'node_modules/zod/package.json'));
-          if (!root.version.startsWith('3.') || !nested.version.startsWith('4.')) process.exit(1);
-          if (shared.SecurityRefSchema.safeParse({}).success) process.exit(1);
+          let hasNested = true;
+          try {
+            require(path.join(sharedRoot, 'node_modules/zod/package.json'));
+          } catch (e) {
+            if (e.code === 'MODULE_NOT_FOUND') hasNested = false;
+          }
+          if (hasNested) {
+            console.error('Error: nested zod package still exists, expected peer dependency resolution');
+            process.exit(1);
+          }
           EOF
 
           cat > consumer.mts <<'EOF'
