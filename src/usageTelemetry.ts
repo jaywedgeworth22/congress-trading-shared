@@ -277,6 +277,36 @@ function fallbackErrorCode(status: number): UsageTelemetryErrorCode {
   return "invalid_request";
 }
 
+/**
+ * Wave H / C1: typed failure so producers can honor Retry-After and open a
+ * circuit breaker without hammering a degraded monitor.
+ */
+export class UsageTelemetryIngestError extends Error {
+  readonly status: number;
+  readonly retryAfterSeconds: number | null;
+
+  constructor(message: string, status: number, retryAfterSeconds: number | null = null) {
+    super(message);
+    this.name = "UsageTelemetryIngestError";
+    this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+function parseRetryAfterSeconds(header: string | null): number | null {
+  if (!header) return null;
+  const trimmed = header.trim();
+  if (!trimmed) return null;
+  const asInt = Number(trimmed);
+  if (Number.isFinite(asInt) && asInt >= 0) {
+    return Math.min(Math.floor(asInt), 24 * 60 * 60);
+  }
+  const asDate = Date.parse(trimmed);
+  if (!Number.isFinite(asDate)) return null;
+  const seconds = Math.ceil((asDate - Date.now()) / 1000);
+  return seconds > 0 ? Math.min(seconds, 24 * 60 * 60) : 0;
+}
+
 export function createUsageTelemetryClient(options: UsageTelemetryClientOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const url = usageMonitorIngestUrl(options.baseUrl);
@@ -355,7 +385,28 @@ export function createUsageTelemetryClient(options: UsageTelemetryClientOptions)
           producerKeyRef: event.producerKeyRef ?? keyRef,
         });
       });
+<<<<<<< Updated upstream
       return post(wireEvents);
+=======
+      const payload = await res.json().catch(() => ({}));
+      // HTTP 202 Accepted is success regardless of `accepted` count (idempotent
+      // replays and pruned duplicates still mean "do not retry as a failure").
+      if (res.status === 202 || res.ok) {
+        return UsageTelemetryIngestResponseSchema.parse(payload);
+      }
+      const message = typeof payload === "object" && payload && "error" in payload
+        ? String((payload as { error?: unknown }).error)
+        : `HTTP ${res.status}`;
+      const retryAfterSeconds =
+        res.status === 429 || res.status === 503
+          ? parseRetryAfterSeconds(res.headers.get("retry-after"))
+          : null;
+      throw new UsageTelemetryIngestError(
+        `Usage telemetry ingest failed: ${message}`,
+        res.status,
+        retryAfterSeconds
+      );
+>>>>>>> Stashed changes
     },
   };
 }
