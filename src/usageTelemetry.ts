@@ -277,6 +277,13 @@ function fallbackErrorCode(status: number): UsageTelemetryErrorCode {
   return "invalid_request";
 }
 
+/**
+ * Wave H / C1: historical producer catch name. Same constructor as
+ * UsageTelemetryApiError so `instanceof UsageTelemetryIngestError` matches
+ * failures thrown by createUsageTelemetryClient (Retry-After included).
+ */
+export { UsageTelemetryApiError as UsageTelemetryIngestError };
+
 export function createUsageTelemetryClient(options: UsageTelemetryClientOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const url = usageMonitorIngestUrl(options.baseUrl);
