@@ -278,33 +278,21 @@ function fallbackErrorCode(status: number): UsageTelemetryErrorCode {
 }
 
 /**
- * Wave H / C1: typed failure so producers can honor Retry-After and open a
- * circuit breaker without hammering a degraded monitor.
+ * Wave H / C1: producers historically catch this name. Alias of the v2 API
+ * error (status + retryAfterSeconds + typed code). Prefer UsageTelemetryApiError
+ * for new code.
  */
-export class UsageTelemetryIngestError extends Error {
-  readonly status: number;
-  readonly retryAfterSeconds: number | null;
-
+export class UsageTelemetryIngestError extends UsageTelemetryApiError {
   constructor(message: string, status: number, retryAfterSeconds: number | null = null) {
-    super(message);
+    super({
+      status,
+      code: status === 429 ? "rate_limited" : status === 503 ? "receiver_busy" : status >= 500 ? "internal_error" : "invalid_request",
+      message,
+      retryable: status === 429 || status >= 500,
+      retryAfterSeconds: retryAfterSeconds ?? undefined,
+    });
     this.name = "UsageTelemetryIngestError";
-    this.status = status;
-    this.retryAfterSeconds = retryAfterSeconds;
   }
-}
-
-function parseRetryAfterSeconds(header: string | null): number | null {
-  if (!header) return null;
-  const trimmed = header.trim();
-  if (!trimmed) return null;
-  const asInt = Number(trimmed);
-  if (Number.isFinite(asInt) && asInt >= 0) {
-    return Math.min(Math.floor(asInt), 24 * 60 * 60);
-  }
-  const asDate = Date.parse(trimmed);
-  if (!Number.isFinite(asDate)) return null;
-  const seconds = Math.ceil((asDate - Date.now()) / 1000);
-  return seconds > 0 ? Math.min(seconds, 24 * 60 * 60) : 0;
 }
 
 export function createUsageTelemetryClient(options: UsageTelemetryClientOptions) {
@@ -385,28 +373,7 @@ export function createUsageTelemetryClient(options: UsageTelemetryClientOptions)
           producerKeyRef: event.producerKeyRef ?? keyRef,
         });
       });
-<<<<<<< Updated upstream
       return post(wireEvents);
-=======
-      const payload = await res.json().catch(() => ({}));
-      // HTTP 202 Accepted is success regardless of `accepted` count (idempotent
-      // replays and pruned duplicates still mean "do not retry as a failure").
-      if (res.status === 202 || res.ok) {
-        return UsageTelemetryIngestResponseSchema.parse(payload);
-      }
-      const message = typeof payload === "object" && payload && "error" in payload
-        ? String((payload as { error?: unknown }).error)
-        : `HTTP ${res.status}`;
-      const retryAfterSeconds =
-        res.status === 429 || res.status === 503
-          ? parseRetryAfterSeconds(res.headers.get("retry-after"))
-          : null;
-      throw new UsageTelemetryIngestError(
-        `Usage telemetry ingest failed: ${message}`,
-        res.status,
-        retryAfterSeconds
-      );
->>>>>>> Stashed changes
     },
   };
 }
