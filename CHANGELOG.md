@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-07-21
+
+### Changed
+- Usage telemetry now sends a versioned v2 envelope with explicit `producerId`, optional
+  `producerInstanceId`, and required stable `eventId` values. The canonical persistence identity is
+  SHA-256 over `usage-telemetry-v2 + producerId + eventId`; mutable measurement fields never rekey an
+  event.
+- Successful ingest acknowledgement counts are explicit: `received`, `persisted`, `duplicates`,
+  `pruned`, and `rejected`. HTTP failures use a typed error code, retryability flag, and optional
+  `retryAfterSeconds`; the client also honors the HTTP `Retry-After` header.
+- The wire event adds opaque `producerKeyRef`, `providerConnectionRef`, and `billingAccountRef`
+  attribution plus declared coverage scope/mode/overlap/report-through metadata. Secrets remain out
+  of the contract.
+- `createUsageTelemetryClient` requires the producer identity. It sends v2 only. Existing durable v1
+  outbox entries may drain through the bounded producer-draft adapter, which promotes their stable
+  `idempotencyKey` to v2 `eventId`; there is no dual-write.
+
+### Added
+- `UsageTelemetryV2BatchSchema`, `UsageTelemetryV2EventSchema`,
+  `UsageTelemetryV2IngestAckSchema`, `UsageTelemetryV2ErrorResponseSchema`,
+  `deriveUsageTelemetryV2IdempotencyKey`, and `UsageTelemetryApiError`.
+
 ## [1.11.0] — 2026-07-19
 
 ### Added
@@ -233,7 +255,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package prepared for install via `prepare` build script and CI.
 - GitHub Actions CI pipeline (typecheck, build, audit).
 
-[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.11.1...v2.0.0
 [1.11.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.9.0...v1.10.0
 [1.8.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.7.1...v1.8.0
