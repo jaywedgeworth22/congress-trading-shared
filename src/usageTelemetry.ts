@@ -278,22 +278,11 @@ function fallbackErrorCode(status: number): UsageTelemetryErrorCode {
 }
 
 /**
- * Wave H / C1: producers historically catch this name. Alias of the v2 API
- * error (status + retryAfterSeconds + typed code). Prefer UsageTelemetryApiError
- * for new code.
+ * Wave H / C1: historical producer catch name. Same constructor as
+ * UsageTelemetryApiError so `instanceof UsageTelemetryIngestError` matches
+ * failures thrown by createUsageTelemetryClient (Retry-After included).
  */
-export class UsageTelemetryIngestError extends UsageTelemetryApiError {
-  constructor(message: string, status: number, retryAfterSeconds: number | null = null) {
-    super({
-      status,
-      code: status === 429 ? "rate_limited" : status === 503 ? "receiver_busy" : status >= 500 ? "internal_error" : "invalid_request",
-      message,
-      retryable: status === 429 || status >= 500,
-      retryAfterSeconds: retryAfterSeconds ?? undefined,
-    });
-    this.name = "UsageTelemetryIngestError";
-  }
-}
+export { UsageTelemetryApiError as UsageTelemetryIngestError };
 
 export function createUsageTelemetryClient(options: UsageTelemetryClientOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
