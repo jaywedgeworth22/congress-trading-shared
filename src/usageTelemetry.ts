@@ -38,7 +38,6 @@ export const UsageTelemetryCoverageScopeSchema = z.enum([
   "project",
   "provider_connection",
   "billing_account",
-  "account",
 ]);
 export const UsageTelemetryCoverageModeSchema = z.enum(["point", "window", "cumulative"]);
 export const UsageTelemetryCoverageRelationshipSchema = z.enum([
@@ -162,6 +161,12 @@ export const UsageTelemetryEventSchema = z.object({
 export const UsageTelemetryBatchSchema = z.object({
   events: z.array(UsageTelemetryEventSchema).min(1).max(100),
 });
+export const LegacyUsageTelemetryOutboxEventSchema = UsageTelemetryEventSchema.extend({
+  idempotencyKey: z.string().trim().min(1).max(200),
+});
+export const LegacyUsageTelemetryOutboxBatchSchema = z.object({
+  events: z.array(LegacyUsageTelemetryOutboxEventSchema).min(1).max(100),
+});
 
 export type UsageTelemetryMetricType = z.infer<typeof UsageTelemetryMetricTypeSchema>;
 export type UsageTelemetryUnit = z.infer<typeof UsageTelemetryUnitSchema>;
@@ -173,6 +178,7 @@ export type UsageTelemetryEventInput = z.input<typeof UsageTelemetryEventSchema>
 export type UsageTelemetryEvent = z.infer<typeof UsageTelemetryEventSchema>;
 export type UsageTelemetryBatchInput = z.input<typeof UsageTelemetryBatchSchema>;
 export type UsageTelemetryBatch = z.infer<typeof UsageTelemetryBatchSchema>;
+export type LegacyUsageTelemetryOutboxEventInput = z.input<typeof LegacyUsageTelemetryOutboxEventSchema>;
 export type UsageTelemetryV2EventInput = z.input<typeof UsageTelemetryV2EventSchema>;
 export type UsageTelemetryV2Event = z.infer<typeof UsageTelemetryV2EventSchema>;
 export type UsageTelemetryV2BatchInput = z.input<typeof UsageTelemetryV2BatchSchema>;
@@ -227,8 +233,6 @@ export interface UsageTelemetryClientOptions {
   producerId: string;
   producerInstanceId?: string;
   fetchImpl?: typeof fetch;
-  /** Reject legacy drafts without an eventId/idempotencyKey instead of deriving a v1 drain ID. */
-  requireExplicitEventId?: boolean;
 }
 
 export class UsageTelemetryApiError extends Error {
@@ -281,63 +285,77 @@ export function createUsageTelemetryClient(options: UsageTelemetryClientOptions)
     ? undefined
     : z.string().trim().min(1).max(160).parse(options.producerInstanceId);
 
+  async function post(wireEvents: UsageTelemetryV2Event[]): Promise<UsageTelemetryIngestResponse> {
+    const body = UsageTelemetryV2BatchSchema.parse({
+      schemaVersion: USAGE_TELEMETRY_SCHEMA_VERSION,
+      producerId,
+      producerInstanceId,
+      events: wireEvents,
+    });
+    const res = await fetchImpl(url, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${options.token}`,
+        "content-type": "application/json",
+        "x-usage-telemetry-version": String(USAGE_TELEMETRY_SCHEMA_VERSION),
+      },
+      body: JSON.stringify(body),
+    });
+    const payload: unknown = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const parsedError = UsageTelemetryV2ErrorResponseSchema.safeParse(payload);
+      const headerRetryAfter = retryAfterSeconds(res.headers.get("retry-after"));
+      if (parsedError.success) {
+        throw new UsageTelemetryApiError({
+          status: res.status,
+          ...parsedError.data.error,
+          retryAfterSeconds: parsedError.data.error.retryAfterSeconds ?? headerRetryAfter,
+        });
+      }
+      const code = fallbackErrorCode(res.status);
+      const message = typeof payload === "object" && payload && "error" in payload
+        ? String((payload as { error?: unknown }).error)
+        : `HTTP ${res.status}`;
+      throw new UsageTelemetryApiError({
+        status: res.status,
+        code,
+        message,
+        retryable: res.status === 429 || res.status >= 500,
+        retryAfterSeconds: headerRetryAfter,
+      });
+    }
+    return UsageTelemetryV2IngestAckSchema.parse(payload);
+  }
+
   return {
-    async send(events: UsageTelemetryEventInput[]): Promise<UsageTelemetryIngestResponse> {
-      const parsed = UsageTelemetryBatchSchema.parse({ events });
-      const wireEvents = await Promise.all(parsed.events.map(async (event, index) => {
-        let eventId = event.eventId ?? event.idempotencyKey;
-        if (!eventId && !options.requireExplicitEventId) {
-          eventId = await deriveUsageTelemetryIdempotencyKey(event);
-        }
-        if (!eventId) {
-          throw new Error(`Usage telemetry event ${index} requires an eventId`);
+    /** Fresh producers send the strict v2 event shape: eventId is required and sourceApp is absent. */
+    async send(events: UsageTelemetryV2EventInput[]): Promise<UsageTelemetryIngestResponse> {
+      const wireEvents = events.map((event) => UsageTelemetryV2EventSchema.parse(event));
+      return post(wireEvents);
+    },
+
+    /**
+     * Bounded migration path for already-persisted v1 rows only. Their durable idempotencyKey is
+     * promoted to v2 eventId. Missing identity or source/producer drift fails before any request.
+     */
+    async sendLegacyOutbox(
+      events: LegacyUsageTelemetryOutboxEventInput[],
+    ): Promise<UsageTelemetryIngestResponse> {
+      const parsed = LegacyUsageTelemetryOutboxBatchSchema.parse({ events });
+      const wireEvents = parsed.events.map((event, index) => {
+        if (event.sourceApp !== producerId) {
+          throw new Error(
+            `Legacy usage telemetry event ${index} sourceApp must match producerId ${producerId}`,
+          );
         }
         const { sourceApp: _sourceApp, idempotencyKey: _idempotencyKey, keyRef, ...measurement } = event;
         return UsageTelemetryV2EventSchema.parse({
           ...measurement,
-          eventId,
+          eventId: event.idempotencyKey,
           producerKeyRef: event.producerKeyRef ?? keyRef,
         });
-      }));
-      const body = UsageTelemetryV2BatchSchema.parse({
-        schemaVersion: USAGE_TELEMETRY_SCHEMA_VERSION,
-        producerId,
-        producerInstanceId,
-        events: wireEvents,
       });
-      const res = await fetchImpl(url, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${options.token}`,
-          "content-type": "application/json",
-          "x-usage-telemetry-version": String(USAGE_TELEMETRY_SCHEMA_VERSION),
-        },
-        body: JSON.stringify(body),
-      });
-      const payload: unknown = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const parsedError = UsageTelemetryV2ErrorResponseSchema.safeParse(payload);
-        const headerRetryAfter = retryAfterSeconds(res.headers.get("retry-after"));
-        if (parsedError.success) {
-          throw new UsageTelemetryApiError({
-            status: res.status,
-            ...parsedError.data.error,
-            retryAfterSeconds: parsedError.data.error.retryAfterSeconds ?? headerRetryAfter,
-          });
-        }
-        const code = fallbackErrorCode(res.status);
-        const message = typeof payload === "object" && payload && "error" in payload
-          ? String((payload as { error?: unknown }).error)
-          : `HTTP ${res.status}`;
-        throw new UsageTelemetryApiError({
-          status: res.status,
-          code,
-          message,
-          retryable: res.status === 429 || res.status >= 500,
-          retryAfterSeconds: headerRetryAfter,
-        });
-      }
-      return UsageTelemetryV2IngestAckSchema.parse(payload);
+      return post(wireEvents);
     },
   };
 }

@@ -9,8 +9,9 @@ coverage, explicit persistence acknowledgement counts, and typed retry/backoff f
 ## Decisions
 
 - Wire idempotency is SHA-256 over stable `producerId + eventId`; mutable measurement fields are not identity.
-- Producers send v2 only. A bounded draft adapter may promote an existing durable v1
-  `idempotencyKey` to `eventId` while old outboxes drain; it does not dual-write.
+- Producers send v2 only, with explicit event IDs. `sendLegacyOutbox` may promote an existing durable
+  v1 `idempotencyKey` to `eventId` while old outboxes drain, but requires its `sourceApp` to equal the
+  configured producer; it never derives a fresh five-field key and does not dual-write.
 - Database models, credential authorization, reconciliation, and money calculations remain owned by
   Usage Monitor and are not part of this package.
 - Provider/account/key references are opaque identifiers, never credential values.

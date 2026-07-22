@@ -634,7 +634,7 @@ describe("schema validation", () => {
 });
 
 describe("createUsageTelemetryClient", () => {
-  it("normalizes a legacy draft into a v2-only envelope and returns explicit counts", async () => {
+  it("sends a strict fresh v2 event and returns explicit counts", async () => {
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
       JSON.stringify({
         ok: true,
@@ -654,8 +654,8 @@ describe("createUsageTelemetryClient", () => {
       producerInstanceId: "worker-a",
       fetchImpl: fetchImpl as typeof fetch,
     });
-    const event: UsageTelemetryEventInput = {
-      sourceApp: "app",
+    const event = {
+      eventId: "event-1",
       provider: "provider",
       occurredAt: "2026-07-11T00:00:00.000Z",
     };
@@ -686,13 +686,13 @@ describe("createUsageTelemetryClient", () => {
       metricType: "usage",
       confidence: "estimated",
     });
-    expect(body.events[0].eventId).toMatch(/^[0-9a-f]{64}$/);
+    expect(body.events[0].eventId).toBe("event-1");
     expect(body.events[0]).not.toHaveProperty("sourceApp");
     expect(body.events[0]).not.toHaveProperty("idempotencyKey");
     expect(UsageTelemetryV2BatchSchema.safeParse(body).success).toBe(true);
   });
 
-  it("uses a durable v1 key as eventId while backlog drains and can require explicit identity", async () => {
+  it("uses only an explicit durable v1 key while backlog drains and enforces producer identity", async () => {
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
       JSON.stringify({ ok: true, schemaVersion: 2, received: 1, persisted: 1, duplicates: 0, pruned: 0, rejected: 0 }),
       { status: 202, headers: { "content-type": "application/json" } },
@@ -701,15 +701,19 @@ describe("createUsageTelemetryClient", () => {
       baseUrl: "https://usage.example.test",
       token: "secret",
       producerId: "app",
-      requireExplicitEventId: true,
       fetchImpl: fetchImpl as typeof fetch,
     });
     const base = { sourceApp: "app", provider: "provider" } satisfies UsageTelemetryEventInput;
 
-    await expect(client.send([base])).rejects.toThrow("requires an eventId");
-    await expect(client.send([{ ...base, idempotencyKey: "   " }])).rejects.toThrow();
+    await expect(client.sendLegacyOutbox([base as never])).rejects.toThrow();
+    await expect(client.sendLegacyOutbox([{ ...base, idempotencyKey: "   " }])).rejects.toThrow();
+    await expect(client.sendLegacyOutbox([{
+      ...base,
+      sourceApp: "different-app",
+      idempotencyKey: "stable-call:wrong-producer",
+    }])).rejects.toThrow("sourceApp must match producerId app");
     expect(fetchImpl).not.toHaveBeenCalled();
-    await client.send([{ ...base, idempotencyKey: "stable-call:prompt" }]);
+    await client.sendLegacyOutbox([{ ...base, idempotencyKey: "stable-call:prompt" }]);
     const body = JSON.parse(String(fetchImpl.mock.calls[0][1]?.body));
     expect(body.events[0].eventId).toBe("stable-call:prompt");
   });
@@ -729,7 +733,7 @@ describe("createUsageTelemetryClient", () => {
       producerId: "app",
       fetchImpl: failedFetch as typeof fetch,
     });
-    const failure = failedClient.send([{ sourceApp: "app", provider: "provider", eventId: "event-1" }]);
+    const failure = failedClient.send([{ provider: "provider", eventId: "event-1" }]);
     await expect(failure).rejects.toBeInstanceOf(UsageTelemetryApiError);
     await expect(failure).rejects.toMatchObject({
       status: 429,
@@ -748,6 +752,6 @@ describe("createUsageTelemetryClient", () => {
       producerId: "app",
       fetchImpl: malformedFetch as typeof fetch,
     });
-    await expect(malformedClient.send([{ sourceApp: "app", provider: "provider", eventId: "event-2" }])).rejects.toThrow();
+    await expect(malformedClient.send([{ provider: "provider", eventId: "event-2" }])).rejects.toThrow();
   });
 });

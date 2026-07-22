@@ -20,14 +20,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The wire event adds opaque `producerKeyRef`, `providerConnectionRef`, and `billingAccountRef`
   attribution plus declared coverage scope/mode/overlap/report-through metadata. Secrets remain out
   of the contract.
-- `createUsageTelemetryClient` requires the producer identity. It sends v2 only. Existing durable v1
-  outbox entries may drain through the bounded producer-draft adapter, which promotes their stable
-  `idempotencyKey` to v2 `eventId`; there is no dual-write.
+- `createUsageTelemetryClient.send` accepts only strict v2 events with an explicit `eventId` and no
+  legacy `sourceApp`. Existing durable v1 outbox entries may drain only through
+  `sendLegacyOutbox`, which requires a stable `idempotencyKey`, verifies `sourceApp` equals the
+  configured `producerId`, and promotes that key to v2 `eventId`; there is no dual-write or
+  five-field fallback for fresh events.
 
 ### Added
 - `UsageTelemetryV2BatchSchema`, `UsageTelemetryV2EventSchema`,
   `UsageTelemetryV2IngestAckSchema`, `UsageTelemetryV2ErrorResponseSchema`,
   `deriveUsageTelemetryV2IdempotencyKey`, and `UsageTelemetryApiError`.
+
+## [1.11.1] — 2026-07-20
+
+### Changed
+- Moved `zod` from a bundled runtime dependency to a `^4.4.3` peer dependency (and retained it as a
+  development dependency), preventing nested/duplicate Zod runtimes at consumer schema boundaries.
+- Bumped the package version to 1.11.1 for the immutable release tag.
 
 ## [1.11.0] — 2026-07-19
 
@@ -257,6 +266,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v2.0.0...HEAD
 [2.0.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.11.1...v2.0.0
+[1.11.1]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.9.0...v1.10.0
 [1.8.0]: https://github.com/jaywedgeworth22/congress-trading-shared/compare/v1.7.1...v1.8.0
