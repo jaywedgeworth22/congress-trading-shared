@@ -45,6 +45,11 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Align TypeScript map settings with the published artifact (CODEX, P3/S) — RESOLVED 2026-07-23 CURSOR.**
+  `tsconfig.json` does NOT enable `sourceMap` or `declarationMap`, and tsup emits no `.map` files.
+  The issue is moot — the compiler settings and artifact are already aligned. GitHub issues #180/#240 closed.
+- **Correct the filing-lag overflow bucket boundary (CODEX, P2/S) — RESOLVED 2026-07-23 CURSOR.**
+  `LAG_BUCKETS` `{label:"46-60d", max:60}` changed to `{label:"46-59d", max:59}` in PR #238 so day 60 correctly lands in `60d+`. GitHub issues #181/#241 closed. Consumer note: Congress.Trade has vendored references to `46-60d` in analytics tests.
 - **[congress-trading-shared][CODEX] Usage telemetry contract v2 authority — 2026-07-21.** PR #219 merged as `19a77a`; tagged `v2.0.0`. V2-only producer/event envelope with explicit provider-account identity and canonical SHA-256 idempotency.
 - **[congress-trading-shared][CLAUDE] Self-hosted CI activation — 2026-07-23 CURSOR triage.** CI is live on Hetzner shared-ci runner (PRs #222/#224). Runner has minor `/var/tmp/gh-runner/` temp-dir issue (publint step fails; all code steps pass).
 - **[congress-trading-shared][CLAUDE] Call-classifier contract — 2026-07-19.** PR #197 MERGED to main as `904ea96`, tagged `v1.10.0`.
@@ -360,6 +365,7 @@ Completed occurrence.
 - **[congress-trading-shared][CLAUDE] Stale-board reconciliation + self-hosted CI truth pass (2026-07-19) — COMPLETED.** Adversarial multi-agent audit (23 agents) re-verified 16 open P0/P1/P2 claims against HEAD `1b0865d` (v1.10.0, NOT 1.9.0 as the board and the AG handoff both stated). Result: **13 already fixed** (moved to Completed above with per-item file:line receipts), 3 genuinely open (SSE auth flow = cross-app remainder only; Node type floor = `@types/node` still on 26 vs `engines.node >=20`; filing-lag `60d+` boundary), 1 partially open (dual-Zod: no dual instance exists today, but `zod` should move to `peerDependencies` to make future majors fail loudly). ALSO: PR #198 is **merged** as `1b0865d` (board said 'open, blocked on Coolify auth' — wrong). Coolify auth was never a token-validity problem: `COOLIFY_API_TOKEN` in `/Users/jay/.secrets/global-api-keys` was wrapped in double-THEN-single quotes, so sourcing yielded a value with literal `'` characters → HTTP 401. Repaired in place; API verified 200. ALSO: another seat added `shared-ci-runner`+`usage-ci-runner` and set `SHARED_CI_RUNNER=shared-ci` at 19:45Z **without a green proof run**; two runs then failed identically (`actions/setup-node` download timed out 3×, runner went offline). Variable deleted → repo returned to the dormant vars-off state PR #198 was merged in; hosted CI re-proved green (`29704710512`). Runner containers left in place, untouched. Capacity finding for the fleet owner: `host.jays.services` is a cx33 (4 vCPU / 8 GB) now carrying **14 GB** of runner `mem_limit` ceilings across 6 containers.
 
 ## In Progress
+- **[congress-trading-shared][AG] ISO 8601 UTC date/time formatting contract (2026-07-24).** Adding `isIsoDateTime` and `toIsoUtcString` helpers to `src/utils.ts`, exporting `IsoDateTimeSchema` in `src/schemas.ts`, and releasing `v2.3.0`. Branch `ag/iso-8601-utc-datetime-formatting`.
 - **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
   Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
   responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
@@ -394,16 +400,6 @@ Completed occurrence.
   Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
   nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
   normalized fields and endpoint-envelope tests without inventing app runtime logic.
-- **Align TypeScript map settings with the published artifact (CODEX, P3/S) — RESOLVED 2026-07-23 CURSOR.**
-  `tsconfig.json` does NOT enable `sourceMap` or `declarationMap`, and tsup emits no `.map` files.
-  The issue is moot — the compiler settings and artifact are already aligned. GitHub issue #180 closed.
-- **Correct the filing-lag overflow bucket boundary (CODEX, P2/S) — RESOLVED 2026-07-23 CURSOR.**
-  `LAG_BUCKETS` assigns day 60 to `46-60d` and day 61 onward to a bucket labelled `60d+`, producing
-  overlapping display semantics in Congress.Trade analytics. Do not silently rename it in shared:
-  consumer tests and warning styles key on `60d+`. Preserve compatibility and route a coordinated
-  consumer/UI migration or boundary decision before changing the public label.
-  
-  **CONFIRMED STILL REAL — 2026-07-19 CLAUDE re-audit:** src/constants.ts:105-106 — `{label:"46-60d", max:60}` immediately followed by `{label:"60d+", max:null}`, so day 60 lands in `46-60d` and the bucket labelled `60d+` actually starts at day 61. Coordinated fix required across (1) src/constants.ts:105-106, (2) src/__tests__/constants.test.ts:276-277 which pins the old strings, and (3) Congress.Trade consumer tests/warning styles that key on the literal `60d+`.
 
 
 ## Archived provenance — terminal rows reconciled above
