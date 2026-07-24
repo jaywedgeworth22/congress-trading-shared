@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isIsoDate, isIsoDateTime } from "./utils";
+import { isIsoDate } from "./utils";
 import { CONGRESS_EVENT_TYPES } from "./constants";
 
 const nullAsUndefined = <T extends z.ZodType>(schema: T) =>
@@ -223,8 +223,33 @@ export const AnalystRowSchema = z.object({
   analystCount: nullAsUndefined(z.number()),
   source: nullAsUndefined(z.string()),
   updatedAt: z.string().optional(),
+  asOfTimestamp: nullAsUndefined(z.string()),
 });
 export type AnalystRow = z.infer<typeof AnalystRowSchema>;
+
+export const TradeEventRowSchema = z.object({
+  docId: z.string(),
+  chamber: ChamberSchema,
+  source: z.string(),
+  sourceUrl: nullAsUndefined(z.string()),
+  filerName: z.string(),
+  filerId: nullAsUndefined(z.string()),
+  party: nullAsUndefined(z.string()),
+  state: nullAsUndefined(z.string()),
+  district: nullAsUndefined(z.string()),
+  ticker: z.string(),
+  assetType: nullAsUndefined(z.string()),
+  assetDescription: nullAsUndefined(z.string()),
+  txType: z.string(),
+  transactionDate: IsoDateSchema,
+  transactionTimestamp: nullAsUndefined(z.string()),
+  disclosureDate: nullAsUndefined(IsoDateSchema),
+  disclosureTimestamp: nullAsUndefined(z.string()),
+  extractedTimestamp: nullAsUndefined(z.string()),
+  amountMin: nullAsUndefined(z.number()),
+  amountMax: nullAsUndefined(z.number()),
+});
+export type TradeEventRow = z.infer<typeof TradeEventRowSchema>;
 
 export const InsiderRowSchema = z.object({
   ticker: z.string(),
@@ -278,6 +303,7 @@ export const SharePayloadSchema = z.object({
   shortVolume: z.array(ShortVolumeRowSchema).optional(),
   fundamentals: z.array(FundamentalRowSchema).optional(),
   analyst: z.array(AnalystRowSchema).optional(),
+  trades: z.array(TradeEventRowSchema).optional(),
   origin: z.string().optional(),
 });
 export type SharePayload = z.infer<typeof SharePayloadSchema>;
