@@ -45,6 +45,11 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **Align TypeScript map settings with the published artifact (CODEX, P3/S) — RESOLVED 2026-07-23 CURSOR.**
+  `tsconfig.json` does NOT enable `sourceMap` or `declarationMap`, and tsup emits no `.map` files.
+  The issue is moot — the compiler settings and artifact are already aligned. GitHub issues #180/#240 closed.
+- **Correct the filing-lag overflow bucket boundary (CODEX, P2/S) — RESOLVED 2026-07-23 CURSOR.**
+  `LAG_BUCKETS` `{label:"46-60d", max:60}` changed to `{label:"46-59d", max:59}` in PR #238 so day 60 correctly lands in `60d+`. GitHub issues #181/#241 closed. Consumer note: Congress.Trade has vendored references to `46-60d` in analytics tests.
 - **[congress-trading-shared][CODEX] Usage telemetry contract v2 authority — 2026-07-21.** PR #219 merged as `19a77a`; tagged `v2.0.0`. V2-only producer/event envelope with explicit provider-account identity and canonical SHA-256 idempotency.
 - **[congress-trading-shared][CLAUDE] Self-hosted CI activation — 2026-07-23 CURSOR triage.** CI is live on Hetzner shared-ci runner (PRs #222/#224). Runner has minor `/var/tmp/gh-runner/` temp-dir issue (publint step fails; all code steps pass).
 - **[congress-trading-shared][CLAUDE] Call-classifier contract — 2026-07-19.** PR #197 MERGED to main as `904ea96`, tagged `v1.10.0`.
@@ -394,16 +399,6 @@ Completed occurrence.
   Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
   nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
   normalized fields and endpoint-envelope tests without inventing app runtime logic.
-- **Align TypeScript map settings with the published artifact (CODEX, P3/S) — RESOLVED 2026-07-23 CURSOR.**
-  `tsconfig.json` does NOT enable `sourceMap` or `declarationMap`, and tsup emits no `.map` files.
-  The issue is moot — the compiler settings and artifact are already aligned. GitHub issue #180 closed.
-- **Correct the filing-lag overflow bucket boundary (CODEX, P2/S) — RESOLVED 2026-07-23 CURSOR.**
-  `LAG_BUCKETS` assigns day 60 to `46-60d` and day 61 onward to a bucket labelled `60d+`, producing
-  overlapping display semantics in Congress.Trade analytics. Do not silently rename it in shared:
-  consumer tests and warning styles key on `60d+`. Preserve compatibility and route a coordinated
-  consumer/UI migration or boundary decision before changing the public label.
-  
-  **CONFIRMED STILL REAL — 2026-07-19 CLAUDE re-audit:** src/constants.ts:105-106 — `{label:"46-60d", max:60}` immediately followed by `{label:"60d+", max:null}`, so day 60 lands in `46-60d` and the bucket labelled `60d+` actually starts at day 61. Coordinated fix required across (1) src/constants.ts:105-106, (2) src/__tests__/constants.test.ts:276-277 which pins the old strings, and (3) Congress.Trade consumer tests/warning styles that key on the literal `60d+`.
 
 
 ## Archived provenance — terminal rows reconciled above
