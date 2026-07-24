@@ -2,6 +2,30 @@ import { z } from "zod";
 
 export const USAGE_TELEMETRY_SCHEMA_VERSION = 2 as const;
 export const API_USAGE_MONITOR_INGEST_PATH = "/api/ingest/usage";
+export const API_USAGE_MONITOR_HEALTH_PATH = "/api/health";
+export const API_USAGE_MONITOR_READY_PATH = "/api/ready";
+
+export const USAGE_TELEMETRY_PRODUCERS = ["congress-trade", "socratic-trade", "usage-monitor"] as const;
+export const UsageTelemetryProducerSchema = z.enum(USAGE_TELEMETRY_PRODUCERS);
+
+export const USAGE_TELEMETRY_KNOWN_PROVIDERS = [
+  "openrouter",
+  "openai",
+  "anthropic",
+  "google-ai",
+  "mistral",
+  "finnhub",
+  "fmp",
+  "unusual-whales",
+  "firecrawl",
+  "sec-edgar",
+  "alpaca",
+  "polygon",
+  "quantconnect",
+  "hetzner",
+  "cloudflare",
+] as const;
+export const UsageTelemetryKnownProviderSchema = z.enum(USAGE_TELEMETRY_KNOWN_PROVIDERS);
 
 export const UsageTelemetryMetricTypeSchema = z.enum([
   "usage",
@@ -169,6 +193,8 @@ export const LegacyUsageTelemetryOutboxBatchSchema = z.object({
 });
 
 export type UsageTelemetryMetricType = z.infer<typeof UsageTelemetryMetricTypeSchema>;
+export type UsageTelemetryProducer = z.infer<typeof UsageTelemetryProducerSchema>;
+export type UsageTelemetryKnownProvider = z.infer<typeof UsageTelemetryKnownProviderSchema>;
 export type UsageTelemetryUnit = z.infer<typeof UsageTelemetryUnitSchema>;
 export type UsageTelemetryBillingMode = z.infer<typeof UsageTelemetryBillingModeSchema>;
 export type UsageTelemetryConfidence = z.infer<typeof UsageTelemetryConfidenceSchema>;
@@ -186,6 +212,27 @@ export type UsageTelemetryV2Batch = z.infer<typeof UsageTelemetryV2BatchSchema>;
 export type UsageTelemetryIngestResponse = z.infer<typeof UsageTelemetryV2IngestAckSchema>;
 export type UsageTelemetryV2ErrorResponse = z.infer<typeof UsageTelemetryV2ErrorResponseSchema>;
 export type UsageTelemetryErrorCode = z.infer<typeof UsageTelemetryErrorCodeSchema>;
+
+function generateFallbackUuid(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "evt_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 10);
+}
+
+/**
+ * Creates and validates a strict v2 UsageTelemetryEvent.
+ * Auto-generates an eventId if one is not supplied.
+ */
+export function createUsageTelemetryV2Event(
+  input: Omit<UsageTelemetryV2EventInput, "eventId"> & { eventId?: string },
+): UsageTelemetryV2Event {
+  const eventId = input.eventId ?? generateFallbackUuid();
+  return UsageTelemetryV2EventSchema.parse({
+    ...input,
+    eventId,
+  });
+}
 
 export function usageMonitorIngestUrl(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, "")}${API_USAGE_MONITOR_INGEST_PATH}`;
