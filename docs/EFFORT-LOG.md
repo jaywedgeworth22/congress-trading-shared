@@ -44,6 +44,15 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **[congress-trading-shared][CODEX] Usage telemetry contract v2 authority — 2026-07-21.** PR #219 merged as `19a77a`; tagged `v2.0.0`. V2-only producer/event envelope with explicit provider-account identity and canonical SHA-256 idempotency.
+- **[congress-trading-shared][CLAUDE] Self-hosted CI activation — 2026-07-23 CURSOR triage.** CI is live on Hetzner shared-ci runner (PRs #222/#224). Runner has minor `/var/tmp/gh-runner/` temp-dir issue (publint step fails; all code steps pass).
+- **[congress-trading-shared][CLAUDE] Call-classifier contract — 2026-07-19.** PR #197 MERGED to main as `904ea96`, tagged `v1.10.0`.
+- **[congress-trading-shared][CODEX] Reusable Autofix owned-runner input — 2026-07-18.** Superseded / no code. Adversarial review found unsafe to route onto production-adjacent CI runner; Congress.Trade disables Autofix until a dedicated ephemeral runner exists.
+- **[congress-trading-shared][CODEX/CURSOR] Fleet PR/branch/worktree reconciliation — 2026-07-22 CURSOR triage.** Completed as part of comprehensive repo audit. Deleted 6 stale origin branches + 7 local branches, pruned Claude worktree.
+- **[congress-trading-shared][CODEX] Whole-package shared dependency audit — 2026-07-23 CURSOR triage.** Superseded by multiple subsequent audits (CLAUDE 2026-07-19 adversarial multi-agent audit, CURSOR 2026-07-22 comprehensive repo audit).
+- **[congress-trading-shared][CODEX/CLAUDE] Conditional declarations + Node type floor — 2026-07-19.** RESOLVED by CLAUDE — PR #200 merged, `@types/node` re-pinned to ^20.19.9.
+- **[congress-trading-shared][CURSOR] Cross-app shared-dep proper-usage audit — 2026-07-23 CURSOR triage.** Subsumed by v2.0.0/v2.1.0 releases. All consumers now on v2.0.0+.
+- **[congress-trading-shared][CURSOR] Effort state reconciliation — 2026-07-23 CURSOR triage.** Completed as part of this triage pass. Live board and mirror reconciled, stale issues closed.
 - **[congress-trading-shared][CURSOR] Comprehensive repo audit + agent work incorporation — 2026-07-22.** PR #222 merged; v2.1.0 tagged. Landed `normalizeCompanyName()` + state-suffix stripping (197 lines, 6 tests, 853 total). Self-hosted CI re-enabled. Socratic.Trade upgraded v1.11.1→v2.1.0. 6 origin + 7 local stale branches deleted.
 - **Resolve the dual-Zod public-schema boundary (AG, S) — COMPLETED 2026-07-20.**
   Moved `zod` to `peerDependencies` (and added to `devDependencies`) to prevent future runtime
@@ -350,22 +359,6 @@ Completed occurrence.
 - **[congress-trading-shared][CLAUDE] Stale-board reconciliation + self-hosted CI truth pass (2026-07-19) — COMPLETED.** Adversarial multi-agent audit (23 agents) re-verified 16 open P0/P1/P2 claims against HEAD `1b0865d` (v1.10.0, NOT 1.9.0 as the board and the AG handoff both stated). Result: **13 already fixed** (moved to Completed above with per-item file:line receipts), 3 genuinely open (SSE auth flow = cross-app remainder only; Node type floor = `@types/node` still on 26 vs `engines.node >=20`; filing-lag `60d+` boundary), 1 partially open (dual-Zod: no dual instance exists today, but `zod` should move to `peerDependencies` to make future majors fail loudly). ALSO: PR #198 is **merged** as `1b0865d` (board said 'open, blocked on Coolify auth' — wrong). Coolify auth was never a token-validity problem: `COOLIFY_API_TOKEN` in `/Users/jay/.secrets/global-api-keys` was wrapped in double-THEN-single quotes, so sourcing yielded a value with literal `'` characters → HTTP 401. Repaired in place; API verified 200. ALSO: another seat added `shared-ci-runner`+`usage-ci-runner` and set `SHARED_CI_RUNNER=shared-ci` at 19:45Z **without a green proof run**; two runs then failed identically (`actions/setup-node` download timed out 3×, runner went offline). Variable deleted → repo returned to the dormant vars-off state PR #198 was merged in; hosted CI re-proved green (`29704710512`). Runner containers left in place, untouched. Capacity finding for the fleet owner: `host.jays.services` is a cx33 (4 vCPU / 8 GB) now carrying **14 GB** of runner `mem_limit` ceilings across 6 containers.
 
 ## In Progress
-- **[congress-trading-shared][CODEX] Usage telemetry contract v2 authority (cross-app, owner-directed 2026-07-21) — LOCAL RELEASE GATE GREEN / PR PENDING.** Isolated `codex/usage-telemetry-v2-20260721`; v2-only wire envelope, producer/event and provider-account identity, canonical SHA-256 idempotency, structured ACK/error/backoff semantics, and bounded v1-outbox drain adapter. No monitor persistence/reconciliation logic. Verified typecheck, build+dts, publint, 424/424 coverage tests, npm audit/signatures, pack dry-run, and diff-check. Paired adoption lanes: Usage-Monitor, Congress.Trade Deno Deploy, Socratic.Trade.
-- **[congress-trading-shared][CLAUDE] Move GitHub-hosted CI onto the fleet self-hosted runners (owner-directed fleet $0-hosted-minutes-cap mission, 2026-07-19) — CODE MERGED; ACTIVATION BLOCKED ON AN UNHEALTHY RUNNER (fleet-infra owner action).** Branch `claude/self-hosted-ci` **merged as `1b0865d` (PR #198)**. Gated ci.yml (verify) + effort-issues-sync.yml (sync) behind `${{ (github.actor != 'dependabot[bot]' && vars.SHARED_CI_RUNNER) || 'ubuntu-latest' }}`; added `workflow_dispatch` where missing. `codex-autofix-reusable.yml` LEFT ON HOSTED by design (reusable cross-repo; `vars` resolves against caller; runs claude-code-action next to prod — matches CODEX's 2026-07-18 "unsafe on production-adjacent runner" finding above).
-  
-  **Status 2026-07-19 (CLAUDE, verified live):** The old "blocked on Coolify auth" blocker was a **misdiagnosis** — the token was valid; `COOLIFY_API_TOKEN` in `/Users/jay/.secrets/global-api-keys` was wrapped in double-THEN-single quotes (`"'N|…'"`), so sourcing produced a value containing literal `'` characters and Coolify returned HTTP 401. Repaired in place (double quotes only); API re-verified 200 on `/version`, `/servers`, `/services`, `/applications`. **Do not re-add the inner single quotes** — that alone reproduces the "expired token" symptom.
-  
-  Infra half was completed by another seat: `shared-ci-runner` and `usage-ci-runner` added to service `github-runner` (uuid `uhz1yhxevabvbf9eblxo4t8z`), runner `coolify-hetzner-shared-ci` registered and online, and `SHARED_CI_RUNNER=shared-ci` set at 19:45Z — **but with no green proof run.** It does not work: runs `29701249264` (×2, identical) failed in `Set up job` — `actions/checkout` took 39s and `actions/setup-node` hit the 100s `HttpClient.Timeout` on all 3 attempts (`Failed to download archive … after 3 attempts`), after which the runner dropped **offline**. All other runners stayed online, so it is not a host-wide outage. **CLAUDE deleted the variable**, returning the repo to the dormant vars-off state PR #198 was merged in; hosted CI re-proved green (`29704710512`, ubuntu-latest). Runner containers left untouched.
-  
-  REMAINING FOLLOW-UPS (fleet-infra lane, not claimed here): (1) root-cause shared-ci's egress to `codeload.github.com`; (2) capacity — `host.jays.services` is a **cx33 (4 vCPU / 8 GB)** carrying **14 GB** of `mem_limit` ceilings across 6 runner containers (2560+2048+2560+3072+2048+2048); shared-ci is `oom_score_adj: 600` = killed first. Likely needs a bigger box (cx43 = 8 vCPU/16 GB) or fewer concurrent runners — **not** a smaller `mem_limit`, which makes OOM more likely since `npm ci`+`tsc`+`vitest` routinely exceeds 1 GB; (3) re-set `SHARED_CI_RUNNER=shared-ci` **only after** a green proof run.
-- **[congress-trading-shared][CLAUDE] Call-classifier contract + providerRequestId telemetry field — MONET Wave-1a pickup (2026-07-18 22:20 CDT) — COMPLETED 22:27 CDT: PR #197 MERGED to main as `904ea96`, tagged `v1.10.0`. KEEPOUT released.** Owner-directed pickup of MONET's paused Wave-1 (`/Users/jay/apps/HANDOFF-usage-compliance-classifier-MONET.md`; DESIGN §0a/§0b). MONET's unpushed commit `3cd063b` was verified (typecheck, 414/414 tests, build, publint — zero fixes needed), cherry-picked to `claude/classifier-contract` with MONET authorship preserved, then adversarially reviewed (frontier tier): review + the repo codex bot both confirmed the DESIGN's `trace.metadata` nesting was empirically WRONG per OpenRouter docs — fixed in `e7deced` to classifier keys FLAT under `trace`, plus `user`/`session_id` cap 128 and omit-not-throw for blank dynamic ids so enrichment can never break a paid call (419/419 tests; idempotency-key derivation independently re-derived externally, 7/7 vectors match, byte-identical to origin/main and to the monitor's server-side copy). All 5 hosted checks green; codex thread substantively resolved; squash-merged 2026-07-19T03:27Z. DESIGN doc amended in place with the resolved shape. v1.10.0 pin = `904ea96ac237b775c54c8e4bb29df0d1a40da125`; CT & ST bumps in flight (Wave 2, their boards).
-- 2026-07-18 — CODEX — Superseded / no code — **Reusable Autofix owned-runner input**. Adversarial review found that routing the write-token + LLM shell workflow onto Congress.Trade's persistent production-adjacent CI runner would be unsafe. Congress.Trade disables Autofix until a dedicated ephemeral isolated runner exists; no shared workflow change was made and the KEEPOUT is released.
-- **Fleet PR/branch/worktree reconciliation (CODEX, 2026-07-18).** Audit every PR and review thread in `congress-trading-shared`, reconcile agent branches against `origin/main`, land any recoverable work, verify the current release/deployment state, and clean only proven-obsolete worktrees/branches. Keep the pre-existing untracked `test-normalize*.ts` files untouched.
-- **Whole-package shared dependency audit and remediation (CODEX, L) — started 2026-07-11.**
-  Branch `codex/shared-dependency-audit-20260711`; audit portable-contract correctness,
-  package/export/install compatibility, CI/release/security hygiene, documentation/board truth,
-  and read-only integration evidence in Congress.Trade and Socratic.Trade. Substantiated findings
-  become distinct rows before fixes; consumer repositories remain read-only.
 - **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
   Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
   responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
@@ -400,13 +393,6 @@ Completed occurrence.
   Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
   nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
   normalized fields and endpoint-envelope tests without inventing app runtime logic.
-- **Correct conditional declarations and the supported Node type floor (CODEX, P1/S).**
-  The package emitted `.d.mts` but routed ESM and CJS through `.d.ts`, which `publint` flags as
-  ambiguous; it also advertised Node 20 while compiling against Node 26 types. Split conditional
-  type exports, declare the package type, align `@types/node` to 20, and make `publint` plus strict
-  NodeNext/Bundler consumer fixtures merge-blocking.
-  
-  **RESOLVED 2026-07-19 (CLAUDE) — PR #200 merged as `6a9d05f`.** `@types/node` re-pinned to ^20.19.9 with a Dependabot semver-major ignore guard; verified typecheck + build (d.ts & d.mts) + publint clean + 419/419 tests, all 5 PR checks green. Historical detail: the conditional-declarations half was already FIXED — package.json:15-26 now splits `import` → `./dist/index.d.mts` and `require` → `./dist/index.d.ts`, and publint is clean. STILL OPEN: `devDependencies["@types/node"]` is on 26.x while `engines.node` is `>=20.0.0` — re-pin to ^20.x and add a Dependabot ignore for `@types/node` major bumps so the drift cannot silently return.
 - **Align TypeScript map settings with the published artifact (CODEX, P3/S).**
   `tsconfig.json` enables source and declaration maps, but tsup emits/packages neither. Either enable
   verified maps in the build or remove the misleading compiler settings so release contents match
@@ -418,21 +404,7 @@ Completed occurrence.
   consumer/UI migration or boundary decision before changing the public label.
   
   **CONFIRMED STILL REAL — 2026-07-19 CLAUDE re-audit:** src/constants.ts:105-106 — `{label:"46-60d", max:60}` immediately followed by `{label:"60d+", max:null}`, so day 60 lands in `46-60d` and the bucket labelled `60d+` actually starts at day 61. Coordinated fix required across (1) src/constants.ts:105-106, (2) src/__tests__/constants.test.ts:276-277 which pins the old strings, and (3) Congress.Trade consumer tests/warning styles that key on the literal `60d+`.
-- **Reconcile stale effort state and orphaned GitHub issue mirrors (CODEX, P1/M; fleet follow-up).**
-  
-  **DIVERGENCE MEASURED — 2026-07-19 CLAUDE (not actioned; this is CODEX's lane).** Live board `/Users/jay/apps/CONGRESS-SHARED-EFFORT-LOG.md` (131 rows) vs repo mirror `docs/EFFORT-LOG.md` (124 rows, last touched 07:25) have drifted in **both** directions, so a one-way copy is NOT safe and would destroy records: **9 rows exist only on the live board** (v1.8.0 release row; CODEX clean-install artifact audit; CLAUDE stale-board reconciliation; CLAUDE self-hosted CI; CLAUDE call-classifier; CODEX reusable-autofix superseded row; CODEX fleet PR/branch reconciliation; CODEX whole-package audit as *In Progress*; AG architecture/shared-dependency row). **2 rows exist only in the mirror**, and one of them is a *terminal* record the live board lacks: the mirror carries "Whole-package shared dependency audit and remediation (CODEX, L) — **COMPLETED** 2026-07-…" while the live board still lists that same item as In Progress, plus a differently-worded self-hosted-CI row. Resolve the CODEX whole-package-audit status conflict first (mirror says completed, live says in progress — one is wrong), then merge additively in both directions rather than copying either file over the other.
-  The live board and repo mirror diverge, completed rows remain under In Progress/Planned, and the
-  mirror script intentionally leaves renamed/removed effort keys open forever. Latest sync is green
-  while dozens of already-merged/released items remain open. Preserve peer rows, correct their
-  sections with receipts, close orphaned mirror issues deterministically, and socialize verbatim
-  script propagation to the other app repos.
-- **Cross-app shared-dep proper-usage audit + fixes (CURSOR, M) — started 2026-07-09.**
-  Branch `cursor/shared-dep-adoption-9577`. Shared half: bump to **v1.4.2** — add optional
-  `project` + `subscription` metricType to `UsageTelemetryEventSchema` so the client contract
-  matches api-usage-monitor. Paired consumer PRs: Congress.Trade (retire brackets/tickerNormalize/
-  analytics/enrichment dups + SharePayload row validation + createCongressEvent), Socratic.Trade
-  (CONGRESS_EVENT_TYPES + SharePayload type + dead imports), api-usage-monitor (restore 5-field
-  idempotency + shared hash vectors). Verified: 338 shared tests pass.
+
 
 ## Archived provenance — terminal rows reconciled above
 
@@ -493,7 +465,6 @@ Completed occurrence.
   no package code changes in this repo.
 
 ## Planned / Reserved
-- **Architecture & Shared Dependency upgrades (AG) — IN PROGRESS** — 1. Refactor backend to use `createCongressEvent`. 2. Promote duplicate types to shared schemas. 3. Replace SSE D1-polling with Cloudflare WebSockets.
 - CI standard adoption (cross-app, Claude) — RESERVED: 5-line caller workflow consuming the Socratic.Trade reusable verify gate + Mac runner registration. Blocked by: hub repo's reusable `workflow_call` verify gate not built yet — `claude/ci-actions-efficiency` landed WITHOUT producing it (docs-only fast path); current dependency is Socratic.Trade PR #372 (`claude/ci-hybrid-runner-verify`, open) + follow-on reusable entry point. _2026-07-05 (CLAUDE): blocker re-verified and updated._
   _2026-07-05 (CLAUDE next-wave): blocker check re-verified again this cycle — confirmed
   `claude/ci-hybrid-runner-verify` does not exist on Socratic.Trade's origin and no reusable
@@ -504,12 +475,11 @@ Completed occurrence.
 _2026-07-04 backlog exhaustiveness pass (CLAUDE, owner-directed). Tags: CURSOR = Cursor background
 agents (DeepSeek v4 Pro), AG = Antigravity/Gemini, CLAUDE = Claude Code. Assignments are
 reservations, not locks — re-negotiate in #agent-sync._
-- **Split `TICKER_ALIASES` into rename-vs-acquisition classes (AG, M, cross-app)** — ATVI→MSFT is
+- **Split `TICKER_ALIASES` into rename-vs-acquisition classes (AG, M, cross-app)** — shared portion done in v1.3.0; consumer migration pending. ATVI→MSFT is
   undifferentiated from FB→META; Socratic.Trade guards locally (`ACQUISITION_SOURCES`),
   Congress.Trade has no guard. Design the shared API change, surface to owner, then update both
   consumers. Paired rows on both consumer boards.
-  _2026-07-05 (MONET): shared-library portion picked up under owner direction — see In Progress
-  (`monet/sad-hermann-671f4d`). Remaining AG scope after that lands = consumer migration only
+  _2026-07-05 (MONET): shared-library portion picked up under owner direction. Remaining AG scope after that lands = consumer migration only
   (Congress.Trade + Socratic.Trade). AG: ping in #agent-sync if you'd already started; I'll yield/dedup._
 
 ## Archived provenance — terminal rows reconciled above
@@ -520,48 +490,6 @@ reservations, not locks — re-negotiate in #agent-sync._
 
 _Moved to In Progress 2026-07-05 (CURSOR): test coverage (L), SecurityRef subset test (S),
 stale branch deletion (S), publish.yml decommission (S), CHANGELOG.md (S), engines.node (S)._
-
-### 2026-07-05 next-wave (cycle 2)
-_Added by CLAUDE next-wave pass. Tags: CURSOR = Cursor background agents, AG = Antigravity/Gemini,
-CLAUDE = Claude Code, CODEX = Codex, OWNER = owner-run step. Assignments are reservations, not
-locks — re-negotiate in #agent-sync._
-
-- ~~**Add npm test to the CI verify job in ci.yml (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
-- **Run the v1.3.0 release train: land cursor stack, land monet split, tag, bump consumers
-  (OWNER, M)** — Push `cursor` (5 commits) -> PR -> merge; then push `monet/sad-hermann-671f4d`
-  (`03d33bd`, stacked on cursor) -> PR -> merge; tag+push `v1.3.0`; then Socratic.Trade exact-pin
-  edit `#v1.2.0` -> `#v1.3.0` + Congress.Trade lockfile refresh against `#semver:^1.2.x`; verify
-  both consumers' builds. _(why now: all post-v1.2.0 work is stranded on one Mac clone with zero
-  open PRs — a single point of failure. The monet commit is stacked on cursor's unpushed tip so
-  the two must land in sequence; MONET's row already says owner push/PR/tag pending. This also
-  lets the effort-issues sync close open issues #17-#23.)_
-- ~~**Add a tokenless git-install smoke job to CI (pack + install + CJS/ESM import) (CODEX, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Add vitest coverage reporting with a minimum-threshold gate (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Prune merged claude/* branches on origin (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Correct docs/RELEASE.md consumer list (api-usage-monitor is not a consumer) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Unify ticker normalization regex and preferred/depositary symbol helpers (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Move STOCK Act amount bracket array and snapping/validation helpers to shared (unassigned, S)**~~ — _Moved to Completed 2026-07-06._
-- **Consolidate usage telemetry clients in both consumer apps (unassigned, M)** —
-  Refactor Socratic.Trade (`usage-monitor-push.ts`) and Congress.Trade (`telemetry/usage.ts`) to retire local telemetry definitions and instead
-  import the shared `createUsageTelemetryClient` and `UsageTelemetryEventSchema`.
-  _2026-07-06 (CURSOR): claimed — moved to In Progress. Dispatched mid-tier subagent._
-- **Retire duplicate API client fetchers and stream parser in Socratic.Trade (unassigned, M)** —
-  Replace local HTTP wrappers in Socratic.Trade's `congress-trade-client.ts` and SSE parsing in `congress-stream.ts` with the native, strongly-typed
-  `CongressTradeClient` and `SseParser` from `@jaywedgeworth22/congress-trading-shared/src/client`.
-  _2026-07-06 (CURSOR): completed — moved to Completed._
-- **Import snapshot/export types in Congress.Trade (unassigned, S)** —
-  Replace locally defined `SnapshotTableInfo` and `SnapshotManifest` interfaces in Congress.Trade's `export/snapshot.ts` with direct imports from the shared package.
-  _2026-07-06 (CURSOR): completed — moved to Completed._
-
-### 2026-07-05 audit cycle-3
-_Added by CLAUDE audit-c3 pass. Tags: CURSOR / CODEX / AG / MONET / CLAUDE / OWNER. Assignments are
-reservations, not locks — re-negotiate in #agent-sync. NEVER assign to CODEX (quota-capped to
-Jul 8 18:10 CT)._
-
-- ~~**Rebase the 4 open AG PRs onto current main to clear the docs/EFFORT-LOG.md-only conflict and land them (AG, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Fix misleading commit message on ag/client-and-ticker 81b2fd3 (ticker work came from v1.3.0 base, not this branch) (AG, S)**~~ — _Moved to Completed 2026-07-06._
-- ~~**Delete origin/cursor after confirming ahead=0 (merged via v1.3.0, no PR) (CURSOR, S)**~~ — _Moved to Completed 2026-07-06._
 
 ## Changelog of this log
 - 2026-07-06 — CURSOR: completed Agentic Trading → Socratic Trade rename (7 files), added
