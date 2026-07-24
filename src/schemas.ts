@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isIsoDate } from "./utils";
+import { isIsoDate, isIsoDateTime } from "./utils";
 import { CONGRESS_EVENT_TYPES } from "./constants";
 
 const nullAsUndefined = <T extends z.ZodType>(schema: T) =>
@@ -10,6 +10,11 @@ const nullAsUndefined = <T extends z.ZodType>(schema: T) =>
 export const IsoDateSchema = z.string().refine(isIsoDate, {
   message: "Expected a valid YYYY-MM-DD date",
 });
+
+export const IsoDateTimeSchema = z.string().datetime({
+  message: "Expected a valid ISO 8601 UTC date-time string (e.g., 2026-07-22T14:30:00Z)",
+});
+export type IsoDateTime = z.infer<typeof IsoDateTimeSchema>;
 
 // "executive" covers OGE Form 278-T presidential/VP filers — the
 // executive-branch analogue of congressional STOCK Act disclosures.

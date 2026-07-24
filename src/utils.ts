@@ -239,12 +239,46 @@ export function bracketMidpoint(
 // ---- Date helpers ----
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATETIME_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]00:00)?$/;
 
 /** Check if a string is a valid YYYY-MM-DD date. */
 export function isIsoDate(s: string): boolean {
-  if (!ISO_DATE.test(s)) return false;
+  if (typeof s !== "string" || !ISO_DATE.test(s)) return false;
   const d = new Date(s + "T00:00:00Z");
   return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+
+/** Check if a string is a valid ISO 8601 UTC date-time string (e.g. 2026-07-22T14:30:00Z). */
+export function isIsoDateTime(s: string): boolean {
+  if (typeof s !== "string" || !ISO_DATETIME_UTC.test(s)) return false;
+  const d = new Date(s);
+  return !isNaN(d.getTime());
+}
+
+/**
+ * Converts any Date, timestamp number, or date string into a canonical ISO 8601 UTC string (e.g. 2026-07-22T14:30:00.000Z).
+ * Returns null if the input is null, undefined, or invalid.
+ */
+export function toIsoUtcString(input: Date | number | string | null | undefined): string | null {
+  if (input == null) return null;
+  if (input instanceof Date) {
+    return isNaN(input.getTime()) ? null : input.toISOString();
+  }
+  if (typeof input === "number") {
+    if (!Number.isFinite(input)) return null;
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return `${trimmed}T00:00:00.000Z`;
+    }
+    const d = new Date(trimmed);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  return null;
 }
 
 /** Days between two YYYY-MM-DD strings. */

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import {
   IsoDateSchema,
+  IsoDateTimeSchema,
   ChamberSchema,
   PartyBucketSchema,
   OwnerSchema,
@@ -74,6 +75,24 @@ describe("IsoDateSchema", () => {
     expect(IsoDateSchema.safeParse("24-01-15").success).toBe(false);
     expect(IsoDateSchema.safeParse("2024/01/15").success).toBe(false);
     expect(IsoDateSchema.safeParse("2024-1-5").success).toBe(false);
+  });
+});
+
+// =============================================================================
+// IsoDateTimeSchema
+// =============================================================================
+
+describe("IsoDateTimeSchema", () => {
+  it("accepts valid ISO 8601 UTC date-time strings", () => {
+    expect(IsoDateTimeSchema.safeParse("2026-07-22T14:30:00Z").success).toBe(true);
+    expect(IsoDateTimeSchema.safeParse("2026-07-22T14:30:00.000Z").success).toBe(true);
+  });
+
+  it("rejects non-ISO date-time formats", () => {
+    expect(IsoDateTimeSchema.safeParse("2026-07-22 14:30:00").success).toBe(false);
+    expect(IsoDateTimeSchema.safeParse("2026-07-22").success).toBe(false);
+    expect(IsoDateTimeSchema.safeParse("invalid-datetime").success).toBe(false);
+    expect(IsoDateTimeSchema.safeParse(12345).success).toBe(false);
   });
 });
 
