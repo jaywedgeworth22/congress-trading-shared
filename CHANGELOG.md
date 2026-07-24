@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-07-23
+
+### Added
+- Usage Monitor API route constants: `API_USAGE_MONITOR_HEALTH_PATH` (`/api/health`), `API_USAGE_MONITOR_READY_PATH` (`/api/ready`).
+- Usage Monitor producer identity enum & schema (`USAGE_TELEMETRY_PRODUCERS`, `UsageTelemetryProducerSchema`, `UsageTelemetryProducer`).
+- Usage Monitor known provider enum & schema (`USAGE_TELEMETRY_KNOWN_PROVIDERS`, `UsageTelemetryKnownProviderSchema`, `UsageTelemetryKnownProvider`).
+- Pure helper function `createUsageTelemetryV2Event` for validating and creating strict v2 telemetry events with automatic UUID eventId fallback.
+
+### Changed
+- Updated `publint` dependency to `^0.3.22`.
+
+## [2.1.0] — 2026-07-22
+
+### Added
+- Added `normalizeCompanyName()` utility with state-suffix stripping.
+
 ## [2.0.0] — 2026-07-21
 
 ### Changed
