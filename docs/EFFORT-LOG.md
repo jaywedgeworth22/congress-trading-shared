@@ -393,11 +393,10 @@ Completed occurrence.
   Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
   nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
   normalized fields and endpoint-envelope tests without inventing app runtime logic.
-- **Align TypeScript map settings with the published artifact (CODEX, P3/S).**
-  `tsconfig.json` enables source and declaration maps, but tsup emits/packages neither. Either enable
-  verified maps in the build or remove the misleading compiler settings so release contents match
-  declared intent.
-- **Correct the filing-lag overflow bucket boundary (CODEX, P2/S).**
+- **Align TypeScript map settings with the published artifact (CODEX, P3/S) — RESOLVED 2026-07-23 CURSOR.**
+  `tsconfig.json` does NOT enable `sourceMap` or `declarationMap`, and tsup emits no `.map` files.
+  The issue is moot — the compiler settings and artifact are already aligned. GitHub issue #180 closed.
+- **Correct the filing-lag overflow bucket boundary (CODEX, P2/S) — RESOLVED 2026-07-23 CURSOR.**
   `LAG_BUCKETS` assigns day 60 to `46-60d` and day 61 onward to a bucket labelled `60d+`, producing
   overlapping display semantics in Congress.Trade analytics. Do not silently rename it in shared:
   consumer tests and warning styles key on `60d+`. Preserve compatibility and route a coordinated
