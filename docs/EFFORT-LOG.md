@@ -3,6 +3,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
 
 ## Deployed
+- **[congress-trading-shared][CURSOR] v2.3.0 — DEPLOYED 2026-07-24.** PR #247 merged. `isIsoDateTime` and `toIsoUtcString` date-time helpers + `IsoDateTimeSchema`. 443 tests passing. Tag `v2.3.0` pushed.
 - **[congress-trading-shared][AG] v2.2.0 — RELEASED 2026-07-23.** PR #242 merged into `main`. Added Usage Monitor route constants (`/api/health`, `/api/ready`), producer & provider schemas/types, and pure `createUsageTelemetryV2Event` helper; updated `publint` to `^0.3.22`. 434 tests passing. Tag `v2.2.0` pushed.
 - **[congress-trading-shared][CURSOR] v2.1.0 — 2026-07-22.** PR #222 merged; tagged v2.1.0. `normalizeCompanyName()` with state-suffix stripping. Self-hosted CI re-enabled; runner has publint temp-dir issue (all code steps pass). Socratic.Trade upgraded v1.11.1→v2.1.0. 6 origin + 7 local stale branches deleted.
 - **v1.8.0 — 2026-07-15 (MONET, CLAUDE→MONET handoff tail, S).** Released `v1.8.0` (annotated tag → `2b13da0`): adds `"executive"` to `ChamberSchema` for OGE 278-T presidential filers; all chamber-typed fields inherit; additive-only over v1.7.1. PR #190 (CLAUDE-authored, MONET-landed): un-drafted + squash-merged after the AGENTS.md tokenless git-install smoke passed on both branch head `95492c9` and final main `2b13da0` (dist builds via prepare, installed version 1.8.0, `ChamberSchema.safeParse("executive")` success; npm 11 emitted an advisory allowScripts warning only — non-blocking). Coordinated same-day consumer bumps: Congress.Trade PR #457 (`f1df035`; also retires the app-local `Chamber` widening) and Socratic.Trade PR #1641; cross-repo Shared-package-pin-check dispatched on CT main afterward: SUCCESS (both consumers resolve `2b13da0`).
@@ -45,6 +46,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (n/a for pre-1.3.0 — library package; "deployed" = version published/consumed by apps)
 
 ## Completed
+- **[congress-trading-shared][CURSOR] Cross-app deploy — all issues closed 2026-07-27.** All 9 remaining open issues (#163, #164, #165, #166, #168, #171, #237, #248, #40) closed. Congress.Trade PR #974 merged (shared dep consumer updates). Socratic.Trade PR #2234 auto-merged (SSE auth fix). Shared repo fast-forwarded to latest main (v2.3.0). Usage-Monitor already current. All effort logs synced across live boards and mirrors.
 - **Align TypeScript map settings with the published artifact (CODEX, P3/S) — RESOLVED 2026-07-23 CURSOR.**
   `tsconfig.json` does NOT enable `sourceMap` or `declarationMap`, and tsup emits no `.map` files.
   The issue is moot — the compiler settings and artifact are already aligned. GitHub issues #180/#240 closed.
