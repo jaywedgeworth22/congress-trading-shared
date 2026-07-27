@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-07-24
+
+### Added
+- Pure date-time helper functions `isIsoDateTime` and `toIsoUtcString` in `src/utils.ts` to normalize Date objects, epoch timestamps, or date strings into canonical ISO 8601 UTC format (`YYYY-MM-DDTHH:mm:ss.SSSZ`).
+- Exported `IsoDateTimeSchema` and type `IsoDateTime` in `src/schemas.ts` for strict ISO 8601 UTC date-time string validation.
+
 ## [2.2.0] — 2026-07-23
 
 ### Added
