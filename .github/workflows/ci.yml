@@ -20,7 +20,7 @@ jobs:
     # workflow behaves exactly as before (hosted).
     # Runbook — clearing the variable is an instant, global hosted fallback:
     #   gh variable set SHARED_CI_RUNNER --repo jaywedgeworth22/congress-trading-shared --body ""
-    runs-on: ${{ (github.actor != 'dependabot[bot]' && vars.SHARED_CI_RUNNER) || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
