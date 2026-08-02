@@ -64,7 +64,7 @@ export type { SharePayload } from "./schemas";
 
 // ---- Push events (App A → App B) ----
 
-export type { CongressEventType, CongressEvent } from "./schemas";
+export type { CongressEventType, CongressEvent, CongressTradeEvent, CongressTradeData } from "./schemas";
 
 // ---- Snapshot/Export ----
 
