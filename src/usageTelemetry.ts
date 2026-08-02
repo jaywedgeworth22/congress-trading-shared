@@ -24,6 +24,14 @@ export const USAGE_TELEMETRY_KNOWN_PROVIDERS = [
   "quantconnect",
   "hetzner",
   "cloudflare",
+  "massive",
+  "tiingo",
+  "infisical",
+  "peer-app",
+  "external-api",
+  "seed-source",
+  "filing-source",
+  "subscriber-webhook",
 ] as const;
 export const UsageTelemetryKnownProviderSchema = z.enum(USAGE_TELEMETRY_KNOWN_PROVIDERS);
 
