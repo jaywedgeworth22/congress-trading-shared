@@ -330,6 +330,18 @@ export const CongressEventSchema = z.object({
 });
 export type CongressEvent = z.infer<typeof CongressEventSchema>;
 
+export const CongressTradeDataSchema = z.object({
+  trades: z.array(CongressTransactionSchema).optional(),
+  transaction: CongressTransactionSchema.optional(),
+});
+export type CongressTradeData = z.infer<typeof CongressTradeDataSchema>;
+
+export const CongressTradeEventSchema = CongressEventSchema.extend({
+  type: z.literal("congress.trade").or(z.literal("trade.new")),
+  data: CongressTradeDataSchema.optional(),
+});
+export type CongressTradeEvent = z.infer<typeof CongressTradeEventSchema>;
+
 // ---- Analytics ----
 
 export const ConvictionTickerSchema = z.object({
