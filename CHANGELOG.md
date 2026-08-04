@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] — 2026-08-04
+
+### Added
+- `MemberDualPerformanceSchema` / `MemberDualPerformance` for App A dual-anchor
+  member skill: `filingDate` (copy-trade since disclosure) + `tradeDate` (politician timing).
+- `avgAnnualizedExcess` on `MemberPerformanceSchema` (filing-date leg).
+- `getMemberPerformance` returns the full dual envelope (legacy `{ performance }` still accepted).
+
 ## [2.3.0] — 2026-07-24
 
 ### Added

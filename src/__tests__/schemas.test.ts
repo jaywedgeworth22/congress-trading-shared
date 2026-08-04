@@ -1087,6 +1087,7 @@ describe("MemberPerformanceSchema", () => {
       medianExcess: 0.005,
       avgReturn: 0.01,
       avgExcess: 0.003,
+      avgAnnualizedExcess: 0.04,
     });
     expect(result.success).toBe(true);
   });
@@ -1098,6 +1099,22 @@ describe("MemberPerformanceSchema", () => {
       medianExcess: null,
       avgReturn: null,
       avgExcess: null,
+      avgAnnualizedExcess: null,
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("MemberDualPerformanceSchema", () => {
+  it("parses dual-anchor envelope from App A", async () => {
+    const { MemberDualPerformanceSchema } = await import("../schemas");
+    const result = MemberDualPerformanceSchema.safeParse({
+      filerId: "P000197",
+      side: "buys",
+      buyCount: 20,
+      tradeDate: { scoredCount: 15, avgExcess: 0.02, winRate: 0.6 },
+      filingDate: { scoredCount: 14, avgExcess: 0.01, avgAnnualizedExcess: 0.03, winRate: 0.55 },
+      performance: { scoredCount: 15, avgExcess: 0.02 },
     });
     expect(result.success).toBe(true);
   });
