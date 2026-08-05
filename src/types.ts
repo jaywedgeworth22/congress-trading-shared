@@ -53,6 +53,7 @@ export type {
   ClusterBuy,
   MemberLeader,
   MemberPerformance,
+  MemberDualPerformance,
   BacktestHorizon,
   TickerBacktest,
   CommitteeConflict,
