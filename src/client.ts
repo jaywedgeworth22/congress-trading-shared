@@ -2,6 +2,7 @@ import { API_PATHS, DEFAULT_CONGRESS_TRADE_BASE_URL, MAX_REFS_BATCH } from "./co
 import type {
   BundleResponse,
   TransactionsPage,
+  TransactionsQueryInput,
   TransactionsQuery,
   PriceClose,
   PriceSeries,
@@ -308,7 +309,7 @@ export class CongressTradeClient {
     ));
   }
 
-  async getTransactions(query: TransactionsQuery = {}): Promise<TransactionsPage> {
+  async getTransactions(query: TransactionsQueryInput = {}): Promise<TransactionsPage> {
     const parsedQuery = TransactionsQuerySchema.parse(query);
     const params = new URLSearchParams();
     if (parsedQuery.since !== undefined) params.set("since", String(parsedQuery.since));
