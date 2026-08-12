@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.2] — 2026-08-11
+
+### Changed
+- `TxTypeSchema`: accepts `"B"`, `"S"`, `"E"`, and legacy `"P"` (coercing `"P"` to `"B"`).
+- `STOCK_ACT_BRACKETS`: includes sub-$1,001 `$0 – $1,000` (`min: 0, max: 1_000`) amount bracket tier.
+
+### Added
+- `TransactionsQueryInput` export for query parameters accepting raw letter forms.
+
+## [2.5.1] — 2026-08-04
+
+### Fixed
+- Release tag note for dual-anchor performance on mainline.
+
 ## [2.5.0] — 2026-08-04
 
 ### Added

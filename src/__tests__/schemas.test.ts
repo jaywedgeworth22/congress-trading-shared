@@ -145,10 +145,13 @@ describe("OwnerSchema", () => {
 });
 
 describe("TxTypeSchema", () => {
-  it("accepts valid transaction types", () => {
-    expect(TxTypeSchema.safeParse("P").success).toBe(true);
+  it("accepts B/S/E and coerces legacy P to B", () => {
+    expect(TxTypeSchema.safeParse("B").success).toBe(true);
     expect(TxTypeSchema.safeParse("S").success).toBe(true);
     expect(TxTypeSchema.safeParse("E").success).toBe(true);
+    const p = TxTypeSchema.safeParse("P");
+    expect(p.success).toBe(true);
+    if (p.success) expect(p.data).toBe("B");
   });
 
   it("rejects invalid transaction types", () => {
