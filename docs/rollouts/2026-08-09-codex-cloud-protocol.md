@@ -14,7 +14,7 @@ These must be configured as regular runtime environment variables when the agent
 Optional coordination variables:
 
 - `SLACK_CHANNEL_ID=C0BEZDJDNKV`
-- `SLACK_PROJECT=congress-trading-shared`
+- `SLACK_PROJECT=Congress-Trading-Shared`
 - `SLACK_AGENT_NAME=Codex`
 - `AGENT_SYNC_TOKEN`
 

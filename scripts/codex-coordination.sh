@@ -5,15 +5,32 @@
 set -u
 
 CHANNEL_ID="${SLACK_CHANNEL_ID:-C0BEZDJDNKV}"
-PROJECT="${SLACK_PROJECT:-${SLACK_TOPIC:-}}"
+PROJECT="${SLACK_PROJECT:-${SLACK_TOPIC:-Congress-Trading-Shared}}"
 AGENT="${SLACK_AGENT_NAME:-${AGENT_NAME:-CODEX}}"
-SELF="${PROJECT:-repo}"
 AUTH_CONFIG=""
 
 cleanup() {
   [ -n "${AUTH_CONFIG:-}" ] && rm -f "$AUTH_CONFIG" 2>/dev/null
 }
 trap cleanup EXIT INT TERM
+
+slack_ok() {
+  printf '%s' "$1" | python3 -c 'import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+sys.exit(0 if d.get("ok") else 1)'
+}
+
+slack_error() {
+  printf '%s' "$1" | python3 -c 'import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    print("parse_error"); sys.exit(0)
+print(d.get("error", "unknown_error"))'
+}
 
 slack_call() {
   if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
@@ -25,12 +42,44 @@ slack_call() {
   printf 'header = "Authorization: Bearer %s"\n' "$SLACK_BOT_TOKEN" >"$AUTH_CONFIG"
   endpoint="$1"
   shift
-  curl -fsS --config "$AUTH_CONFIG" "$@" "https://slack.com/api/$endpoint"
+  curl -sS --config "$AUTH_CONFIG" "$@" "https://slack.com/api/$endpoint"
+}
+
+filter_history() {
+  python3 - "$PROJECT" <<'PY'
+import json, sys
+topic = (sys.argv[1] or "").lower()
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+if not data.get("ok"):
+    json.dump(data, sys.stdout)
+    sys.exit(0)
+if topic:
+    kept = []
+    for msg in data.get("messages") or []:
+        text = (msg.get("text") or "").lower()
+        if (
+            ("[" + topic + "]") in text
+            or "[fleet]" in text
+            or "[all]" in text
+        ):
+            kept.append(msg)
+    data["messages"] = kept
+json.dump(data, sys.stdout)
+PY
 }
 
 case "${1:-help}" in
   test)
-    slack_call auth.test >/dev/null && echo "Slack: OK" || { echo "Slack: FAILED" >&2; exit 1; }
+    resp="$(slack_call auth.test)" || { echo "Slack: FAILED" >&2; exit 1; }
+    if slack_ok "$resp"; then
+      echo "Slack: OK"
+    else
+      echo "Slack: FAILED ($(slack_error "$resp"))" >&2
+      exit 1
+    fi
     if [ -n "${GH_TOKEN:-}" ]; then
       gh api user --jq .login >/dev/null 2>&1 && echo "GitHub: OK" || { echo "GitHub: FAILED" >&2; exit 1; }
     else
@@ -39,22 +88,47 @@ case "${1:-help}" in
     fi
     ;;
   read)
-    limit="${2:-20}"
-    slack_call "conversations.history?channel=${CHANNEL_ID}&limit=${limit}"
+    limit="${2:-}"
+    if [ -z "$limit" ]; then
+      if [ -n "$PROJECT" ]; then
+        limit="${SLACK_PROJECT_FETCH_LIMIT:-${SLACK_TOPIC_FETCH_LIMIT:-100}}"
+      else
+        limit=20
+      fi
+    fi
+    case "$limit" in
+      ''|*[!0-9]*) limit=20 ;;
+    esac
+    resp="$(slack_call "conversations.history?channel=${CHANNEL_ID}&limit=${limit}")" \
+      || { echo "Slack read: FAILED" >&2; exit 1; }
+    if ! slack_ok "$resp"; then
+      echo "Slack read: FAILED ($(slack_error "$resp"))" >&2
+      exit 1
+    fi
+    printf '%s' "$resp" | filter_history
+    echo
     ;;
   post)
     shift
     text="$*"
     [ -n "$text" ] || { echo "usage: $0 post MESSAGE" >&2; exit 2; }
-    prefix="repo: $SELF | [$AGENT->FLEET]"
-    [ -n "${PROJECT:-}" ] && prefix="repo: $PROJECT | [$AGENT->FLEET]"
-    payload="$(python3 - "$CHANNEL_ID" "$prefix $text" <<'PY'
+    tagged="[$PROJECT] [$AGENT]
+repo: $PROJECT
+
+$text"
+    payload="$(python3 - "$CHANNEL_ID" "$tagged" <<'PY'
 import json, sys
 print(json.dumps({"channel": sys.argv[1], "text": sys.argv[2]}))
 PY
 )"
-    slack_call chat.postMessage --data "$payload" >/dev/null
-    echo "Slack post: OK"
+    resp="$(slack_call chat.postMessage -H "Content-Type: application/json; charset=utf-8" --data "$payload")" \
+      || { echo "Slack post: FAILED" >&2; exit 1; }
+    if slack_ok "$resp"; then
+      echo "Slack post: OK"
+    else
+      echo "Slack post: FAILED ($(slack_error "$resp"))" >&2
+      exit 1
+    fi
     ;;
   github)
     gh api user --jq .login

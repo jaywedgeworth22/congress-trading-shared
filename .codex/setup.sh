@@ -21,7 +21,7 @@ else
   exit 1
 fi
 echo "Slack channel: ${SLACK_CHANNEL_ID:-C0BEZDJDNKV}"
-echo "Slack project: ${SLACK_PROJECT:-congress-trading-shared}"
+echo "Slack project: ${SLACK_PROJECT:-Congress-Trading-Shared}"
 echo "Agent: ${SLACK_AGENT_NAME:-${AGENT_NAME:-CODEX}}"
 echo "Apple Notes: Mac-only; cloud completion docs must include the Notes handoff body."
 echo "Setup complete: congress-trading-shared"
