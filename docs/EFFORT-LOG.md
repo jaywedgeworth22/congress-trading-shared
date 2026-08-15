@@ -2,6 +2,9 @@
 Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this file
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
 
+## Completed
+- **[congress-trading-shared][GROK] Fast-forward local main after Mac-storage prune — COMPLETED 2026-08-15.**  Discarded stale In-Progress row for already-merged #260/#262.  `git pull --ff-only` `c1f6787` → `88c72b3`.  0 open PRs.
+
 ## Deployed
 - **[congress-trading-shared][CURSOR] v2.3.0 — DEPLOYED 2026-07-24.** PR #247 merged. `isIsoDateTime` and `toIsoUtcString` date-time helpers + `IsoDateTimeSchema`. 443 tests passing. Tag `v2.3.0` pushed.
 - **[congress-trading-shared][AG] v2.2.0 — RELEASED 2026-07-23.** PR #242 merged into `main`. Added Usage Monitor route constants (`/api/health`, `/api/ready`), producer & provider schemas/types, and pure `createUsageTelemetryV2Event` helper; updated `publint` to `^0.3.22`. 434 tests passing. Tag `v2.2.0` pushed.
