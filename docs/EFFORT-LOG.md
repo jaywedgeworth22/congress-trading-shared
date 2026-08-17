@@ -1,8 +1,12 @@
 # congress-trading-shared Effort Log — cross-agent board
 Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this file
-(mirror: docs/EFFORT-LOG.md in the repo). As of 2026-07-04.
+(mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-17.
+
+## In Progress
 
 ## Completed
+- **2026-08-17 — GROK — BOARD HYGIENE — ISO 8601 already shipped as v2.3.0 (Deployed). First line preserved.**
+- **[congress-trading-shared][AG] ISO 8601 UTC date/time formatting contract (2026-07-24).** Adding `isIsoDateTime` and `toIsoUtcString` helpers to `src/utils.ts`, exporting `IsoDateTimeSchema` in `src/schemas.ts`, and releasing `v2.3.0`. Branch `ag/iso-8601-utc-datetime-formatting`.
 - **[congress-trading-shared][GROK] Fast-forward local main after Mac-storage prune — COMPLETED 2026-08-15.**  Discarded stale In-Progress row for already-merged #260/#262.  `git pull --ff-only` `c1f6787` → `88c72b3`.  0 open PRs.
 
 ## Deployed
@@ -372,43 +376,7 @@ Completed occurrence.
 - **[congress-trading-shared][CLAUDE] Stale-board reconciliation + self-hosted CI truth pass (2026-07-19) — COMPLETED.** Adversarial multi-agent audit (23 agents) re-verified 16 open P0/P1/P2 claims against HEAD `1b0865d` (v1.10.0, NOT 1.9.0 as the board and the AG handoff both stated). Result: **13 already fixed** (moved to Completed above with per-item file:line receipts), 3 genuinely open (SSE auth flow = cross-app remainder only; Node type floor = `@types/node` still on 26 vs `engines.node >=20`; filing-lag `60d+` boundary), 1 partially open (dual-Zod: no dual instance exists today, but `zod` should move to `peerDependencies` to make future majors fail loudly). ALSO: PR #198 is **merged** as `1b0865d` (board said 'open, blocked on Coolify auth' — wrong). Coolify auth was never a token-validity problem: `COOLIFY_API_TOKEN` in `/Users/jay/.secrets/global-api-keys` was wrapped in double-THEN-single quotes, so sourcing yielded a value with literal `'` characters → HTTP 401. Repaired in place; API verified 200. ALSO: another seat added `shared-ci-runner`+`usage-ci-runner` and set `SHARED_CI_RUNNER=shared-ci` at 19:45Z **without a green proof run**; two runs then failed identically (`actions/setup-node` download timed out 3×, runner went offline). Variable deleted → repo returned to the dormant vars-off state PR #198 was merged in; hosted CI re-proved green (`29704710512`). Runner containers left in place, untouched. Capacity finding for the fleet owner: `host.jays.services` is a cx33 (4 vCPU / 8 GB) now carrying **14 GB** of runner `mem_limit` ceilings across 6 containers.
 
 ## In Progress
-- **[congress-trading-shared][CLAUDE] Effort-sync transport-level retry — IN PR 2026-08-12 (branch `claude/effort-sync-transport-retry`).** `http_request` in `scripts/sync-effort-issues.py` caught only `urllib.error.HTTPError`, so transport failures escaped the function, never reached the rate-limit retry in `GitHubClient._request`, and killed the whole run (production: `IncompleteRead(714456 bytes read, 6207 more expected)` while paging `issues?state=all`, plus `SSL: CERTIFICATE_VERIFY_FAILED`); added a bounded 4-attempt 2s→15s backoff over `IncompleteRead`/`HTTPException`/`URLError`/`ConnectionError`/`TimeoutError`/`JSONDecodeError` plus a 30s `urlopen` timeout, retried for idempotent methods ONLY (a truncated-body POST already filed the issue — replaying it duplicates), with `HTTPError` kept ahead of `URLError` so the rate-limit path is preserved; 7 regression tests added (6 verified failing against the pre-fix script), suite 15 → 22. Same fix in Usage-Monitor; reference is Congress.Trade PR #1800. Rollout: `docs/rollouts/2026-08-12-effort-sync-transport-retry.md`.
-- **[congress-trading-shared][AG] ISO 8601 UTC date/time formatting contract (2026-07-24).** Adding `isIsoDateTime` and `toIsoUtcString` helpers to `src/utils.ts`, exporting `IsoDateTimeSchema` in `src/schemas.ts`, and releasing `v2.3.0`. Branch `ag/iso-8601-utc-datetime-formatting`.
-- **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
-  Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
-  responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
-  the shared client promises. Keep `SecurityRef` as the full read-side shape; add safe client-side
-  normalization where backward-compatible and route the producer mapping fix to the Congress.Trade
-  owner without editing that consumer from this repository lane.
-  
-  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the `sharesOutstanding` half is already neutralised on every normalized client path — `normalizeSecurityRef` (src/client.ts:59-63) backfills it to null and src/__tests__/client.test.ts:316-320 pins it, so `getRef`/`getRefs`/`getBundle` do NOT throw against the live producer (`mapSecurityRef`, Congress.Trade app/src/delivery/rest.ts:849-875, emits all 20 other required keys). STILL OPEN: (a) the scoped-enrichment half of this item was never audited; (b) `normalizeSecurityRef` is module-private and NOT re-exported from src/index.ts, so consumers calling `SecurityRefSchema.parse` directly are still unprotected — **RESOLVED 2026-07-19 by PR #203 (`bed364f`), released in v1.11.0: `normalizeSecurityRef` is now exported (no behaviour change, purely additive) with 4 regression tests incl. one proving direct-parse fails without it and succeeds with it**; (c) unverified value-level risks: `marketCapBucket` is passed through raw against a 6-value enum, and `currentPriceDate` must be `YYYY-MM-DD` — one bad row throws an entire `getRefs` batch of up to 500.
-- **Consolidate drifted transaction and client/PWA read contracts (cross-app, P2/M).**
-  Shared transaction schemas omit producer fields such as confidence/source/createdAt/cursorSeq and
-  route-added chamber/memberName; `ClientTransactionSchema` omits emitted `estValue`, while the
-  Congress PWA duplicates the full shape locally. Expand portable read contracts without weakening
-  import schemas, then route producer typing/PWA adoption to Congress.Trade.
-- **Choose a supported authenticated SSE subscription-provisioning flow (cross-app, P1/M).**
-  Socratic.Trade auto-subscribe calls the shared client with no auth while Congress.Trade now requires
-  an end-user session and ignores the posted `clientId`, so the advertised mode always gets HTTP 401.
-  Keep credentials/auth enforcement app-local; coordinate removal of auto mode or a scoped M2M
-  provisioning design, then update shared client docs/signature to match the chosen contract.
-  Also expose the required per-subscription stream secret in `streamUrl` for EventSource callers;
-  preserve the existing bearer-header path used by Socratic.Trade.
-  
-  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the shared client is NOT authless (src/client.ts:99-105 sets `authorization: Bearer` when a token is configured). Nothing to fix inside this repo for the 401 itself; the defective call site is Socratic.Trade `src/lib/congress-stream.ts:77-84`. Remaining work is the cross-app decision only (drop auto-subscribe, or design a scoped M2M provisioning credential) plus the shared doc/signature update.
-- **Make exact-pin drift checks tokenless, symmetric, and fail-closed (cross-app, P1/M).**
-  Current consumer workflows either compare only package specs or require the retired package token,
-  then skip on missing credentials/peer fetch errors. Both repos are public exact-tag consumers.
-  Route a shared reusable lock-SHA/tag check that needs no package token and fails on peer drift.
-- **Remove retired GitHub Packages auth from Congress.Trade cloud bootstrap (cross-app, P2/S).**
-  Congress.Trade still appends registry credentials to `$HOME/.npmrc` and warns installs need a token,
-  contradicting this package's public tokenless-Git policy. Consumer owner must delete the obsolete
-  auth block and verify setup from a clean home; this lane remains read-only there.
-- **Align analytics endpoint schemas with production rows (CODEX, P2/M).**
-  Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
-  nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
-  normalized fields and endpoint-envelope tests without inventing app runtime logic.
-
+- (none)
 
 ## Archived provenance — terminal rows reconciled above
 
@@ -469,6 +437,43 @@ Completed occurrence.
   no package code changes in this repo.
 
 ## Planned / Reserved
+- **2026-08-17 — GROK — BOARD HYGIENE — July 2026 cross-app leftovers parked Planned (not active). First lines preserved.**
+- **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
+  Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
+  responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
+  the shared client promises. Keep `SecurityRef` as the full read-side shape; add safe client-side
+  normalization where backward-compatible and route the producer mapping fix to the Congress.Trade
+  owner without editing that consumer from this repository lane.
+  
+  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the `sharesOutstanding` half is already neutralised on every normalized client path — `normalizeSecurityRef` (src/client.ts:59-63) backfills it to null and src/__tests__/client.test.ts:316-320 pins it, so `getRef`/`getRefs`/`getBundle` do NOT throw against the live producer (`mapSecurityRef`, Congress.Trade app/src/delivery/rest.ts:849-875, emits all 20 other required keys). STILL OPEN: (a) the scoped-enrichment half of this item was never audited; (b) `normalizeSecurityRef` is module-private and NOT re-exported from src/index.ts, so consumers calling `SecurityRefSchema.parse` directly are still unprotected — **RESOLVED 2026-07-19 by PR #203 (`bed364f`), released in v1.11.0: `normalizeSecurityRef` is now exported (no behaviour change, purely additive) with 4 regression tests incl. one proving direct-parse fails without it and succeeds with it**; (c) unverified value-level risks: `marketCapBucket` is passed through raw against a 6-value enum, and `currentPriceDate` must be `YYYY-MM-DD` — one bad row throws an entire `getRefs` batch of up to 500.
+- **Consolidate drifted transaction and client/PWA read contracts (cross-app, P2/M).**
+  Shared transaction schemas omit producer fields such as confidence/source/createdAt/cursorSeq and
+  route-added chamber/memberName; `ClientTransactionSchema` omits emitted `estValue`, while the
+  Congress PWA duplicates the full shape locally. Expand portable read contracts without weakening
+  import schemas, then route producer typing/PWA adoption to Congress.Trade.
+- **Choose a supported authenticated SSE subscription-provisioning flow (cross-app, P1/M).**
+  Socratic.Trade auto-subscribe calls the shared client with no auth while Congress.Trade now requires
+  an end-user session and ignores the posted `clientId`, so the advertised mode always gets HTTP 401.
+  Keep credentials/auth enforcement app-local; coordinate removal of auto mode or a scoped M2M
+  provisioning design, then update shared client docs/signature to match the chosen contract.
+  Also expose the required per-subscription stream secret in `streamUrl` for EventSource callers;
+  preserve the existing bearer-header path used by Socratic.Trade.
+  
+  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the shared client is NOT authless (src/client.ts:99-105 sets `authorization: Bearer` when a token is configured). Nothing to fix inside this repo for the 401 itself; the defective call site is Socratic.Trade `src/lib/congress-stream.ts:77-84`. Remaining work is the cross-app decision only (drop auto-subscribe, or design a scoped M2M provisioning credential) plus the shared doc/signature update.
+- **Make exact-pin drift checks tokenless, symmetric, and fail-closed (cross-app, P1/M).**
+  Current consumer workflows either compare only package specs or require the retired package token,
+  then skip on missing credentials/peer fetch errors. Both repos are public exact-tag consumers.
+  Route a shared reusable lock-SHA/tag check that needs no package token and fails on peer drift.
+- **Remove retired GitHub Packages auth from Congress.Trade cloud bootstrap (cross-app, P2/S).**
+  Congress.Trade still appends registry credentials to `$HOME/.npmrc` and warns installs need a token,
+  contradicting this package's public tokenless-Git policy. Consumer owner must delete the obsolete
+  auth block and verify setup from a clean home; this lane remains read-only there.
+- **Align analytics endpoint schemas with production rows (CODEX, P2/M).**
+  Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
+  nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
+  normalized fields and endpoint-envelope tests without inventing app runtime logic.
+
+
 - CI standard adoption (cross-app, Claude) — RESERVED: 5-line caller workflow consuming the Socratic.Trade reusable verify gate + Mac runner registration. Blocked by: hub repo's reusable `workflow_call` verify gate not built yet — `claude/ci-actions-efficiency` landed WITHOUT producing it (docs-only fast path); current dependency is Socratic.Trade PR #372 (`claude/ci-hybrid-runner-verify`, open) + follow-on reusable entry point. _2026-07-05 (CLAUDE): blocker re-verified and updated._
   _2026-07-05 (CLAUDE next-wave): blocker check re-verified again this cycle — confirmed
   `claude/ci-hybrid-runner-verify` does not exist on Socratic.Trade's origin and no reusable
@@ -496,6 +501,7 @@ _Moved to In Progress 2026-07-05 (CURSOR): test coverage (L), SecurityRef subset
 stale branch deletion (S), publish.yml decommission (S), CHANGELOG.md (S), engines.node (S)._
 
 ## Changelog of this log
+- 2026-08-17 — GROK: board hygiene. Second In Progress emptied; ISO 8601 already Deployed v2.3.0; remaining cross-app rows parked Planned.
 - 2026-07-06 — CURSOR: completed Agentic Trading → Socratic Trade rename (7 files), added
   Zod schemas for AmountBracket/Subscription/SseMessage, expanded client tests from 17 to
   113 (332 total). Commit `836b935` on `main`.
@@ -553,3 +559,5 @@ stale branch deletion (S), publish.yml decommission (S), CHANGELOG.md (S), engin
   misleading commit message during rebase, delete origin/cursor.
 - 2026-07-20 — AG: resolved the dual-Zod public-schema boundary by moving `zod` to `peerDependencies` (+ devDependency) in package.json.
 - 2026-08-12 — GROK: landed open PR queue. #262 merged `976e73e` (verify fail was pre-existing nanoid; main already on 3.3.18). #260 merged `ebe1f95` after Slack `.ok` / project-tag / read-filter review fixes. No open PRs remain.
+
+- **[fleet][AUTOMATED WATCH] HETZNER UPGRADE AVAILABLE: cx43 (8 vCPU / 16 GB, EUR 18.49/mo) -- owner pre-approved cx43 rescale of host.jays.services (id 149429403, upgrade_disk:false to stay reversible; needs power-off, brief socratic-trade-prod downtime).** (detected 2026-08-05 09:41:00 by check-hetzner-cx43.sh)
