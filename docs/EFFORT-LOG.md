@@ -3,9 +3,9 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
-- **[congress-trading-shared][CURSOR] Retire leftover Deno Deploy current-shape in usage-telemetry-v2 rollout (2026-08-20).** Docs-only. `docs/rollouts/2026-07-21-usage-telemetry-v2.md` still said to update "Congress.Trade Deno Deploy". Production Congress.Trade host is Coolify. Dated history stays past tense. No package API change. Branch `cursor/coolify-host-docs-e69c`. Live Mac board needs reconciliation.
 
 ## Completed
+- **[congress-trading-shared][CURSOR] Retire leftover Deno Deploy current-shape in usage-telemetry-v2 rollout (2026-08-20).** COMPLETED. Docs-only. `docs/rollouts/2026-07-21-usage-telemetry-v2.md` now says Congress.Trade on Coolify. Dated history stays. No package API change. PR #275. Live Mac board needs reconciliation.
 - **2026-08-17 — GROK — BOARD HYGIENE — ISO 8601 already shipped as v2.3.0 (Deployed). First line preserved.**
 - **[congress-trading-shared][AG] ISO 8601 UTC date/time formatting contract (2026-07-24).** Adding `isIsoDateTime` and `toIsoUtcString` helpers to `src/utils.ts`, exporting `IsoDateTimeSchema` in `src/schemas.ts`, and releasing `v2.3.0`. Branch `ag/iso-8601-utc-datetime-formatting`.
 - **[congress-trading-shared][GROK] Fast-forward local main after Mac-storage prune — COMPLETED 2026-08-15.**  Discarded stale In-Progress row for already-merged #260/#262.  `git pull --ff-only` `c1f6787` → `88c72b3`.  0 open PRs.
