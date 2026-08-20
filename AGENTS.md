@@ -51,6 +51,17 @@ filter to this repo plus fleet broadcasts. Cloud sessions cannot access `/Users/
 update `docs/EFFORT-LOG.md` and say in #agent-sync when the live board needs Mac-side
 reconciliation. `SLACK_SYNC_WEBSOCKET` belongs only to the single Mac PM2 relay.
 
+## Two spaces between sentences (owner — ALL contexts)
+
+Two spaces after sentence terminators in **all** human-readable prose for every agent:
+README/doc prose, PR titles and bodies, commit messages, Slack posts to #agent-sync,
+Apple Notes, effort-board rows, review reports, design docs, and **chat replies to the
+owner**.  Owner, strengthened 2026-08-19 (in-conversation): "For any and all paragraphs
+in any context, always use 2 spaces to separate a period from the beginning of a new
+sentence." — not limited to product/UI copy.  HTML must preserve the gap (NBSP+space /
+`SENTENCE_GAP`).  Canonical: `/Users/jay/apps/AGENT-SYNC.md` § Two spaces and
+`/Users/jay/apps/FLEET-UI-COPY.md`.
+
 ## Execution Workflow
 
 - **Always Tagged**: Always explicitly identify as AG or Antigravity in Slack messages and commits to avoid "untagged" ghost work.
