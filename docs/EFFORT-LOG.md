@@ -1,8 +1,9 @@
 # congress-trading-shared Effort Log — cross-agent board
 Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this file
-(mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-17.
+(mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
+- **[congress-trading-shared][CURSOR] Retire leftover Deno Deploy current-shape in usage-telemetry-v2 rollout (2026-08-20).** Docs-only. `docs/rollouts/2026-07-21-usage-telemetry-v2.md` still said to update "Congress.Trade Deno Deploy". Production Congress.Trade host is Coolify. Dated history stays past tense. No package API change. Branch `cursor/coolify-host-docs-e69c`. Live Mac board needs reconciliation.
 
 ## Completed
 - **2026-08-17 — GROK — BOARD HYGIENE — ISO 8601 already shipped as v2.3.0 (Deployed). First line preserved.**
