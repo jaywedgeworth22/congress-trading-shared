@@ -3,6 +3,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
+- **[congress-trading-shared][CURSOR] tickerLogoPolicy A/B/C/D seed (v2.6.0) (2026-08-23).** Pure `sourceOrderFor` + 2026-08-23 top-30 map. KV/jury stay in Congress.Trade. Branch `cursor/ticker-logo-policy`.
 - **[congress-trading-shared][CURSOR] Cross-app coordination follow-ups (2026-08-20).**  Pointer only.  Socratic.Trade audit #2802 follow-ups are in ST PR #2941, Congress.Trade #2064, Usage-Monitor #1245.  Pins still CTS v2.5.2.  Pin-check is fail-closed but not a required merge check.  DealDex stays protocol-only / Vercel.  Branch `cursor/cross-app-coordination-followups`.
 
 ## Completed
