@@ -41,7 +41,7 @@
   "devDependencies": {
     "zod": "^4.4.3",
     "@types/node": "^20.19.9",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "publint": "^0.3.23",
     "tsup": "^8.3.5",
     "typescript": "^7.0.2",
