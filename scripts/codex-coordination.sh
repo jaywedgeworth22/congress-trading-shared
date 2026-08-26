@@ -37,18 +37,22 @@ slack_call() {
     echo "Slack unavailable: SLACK_BOT_TOKEN is not a runtime environment variable." >&2
     return 2
   fi
-  AUTH_CONFIG="$(mktemp "${TMPDIR:-/tmp}/codex-slack-auth.XXXXXX")"
-  chmod 600 "$AUTH_CONFIG"
-  printf 'header = "Authorization: Bearer %s"\n' "$SLACK_BOT_TOKEN" >"$AUTH_CONFIG"
-  endpoint="$1"
+  local auth_cfg
+  auth_cfg="$(mktemp "${TMPDIR:-/tmp}/codex-slack-auth.XXXXXX")"
+  chmod 600 "$auth_cfg"
+  printf 'header = "Authorization: Bearer %s"\n' "$SLACK_BOT_TOKEN" >"$auth_cfg"
+  local endpoint="$1"
   shift
-  curl -sS --config "$AUTH_CONFIG" "$@" "https://slack.com/api/$endpoint"
+  local rc=0
+  curl -sS --config "$auth_cfg" "$@" "https://slack.com/api/$endpoint" || rc=$?
+  rm -f "$auth_cfg" 2>/dev/null
+  return $rc
 }
 
 filter_history() {
-  python3 - "$PROJECT" <<'PY'
+  python3 -c '
 import json, sys
-topic = (sys.argv[1] or "").lower()
+topic = (sys.argv[1] if len(sys.argv) > 1 else "").lower()
 try:
     data = json.load(sys.stdin)
 except Exception:
@@ -68,7 +72,7 @@ if topic:
             kept.append(msg)
     data["messages"] = kept
 json.dump(data, sys.stdout)
-PY
+' "$PROJECT"
 }
 
 case "${1:-help}" in
@@ -116,11 +120,7 @@ case "${1:-help}" in
 repo: $PROJECT
 
 $text"
-    payload="$(python3 - "$CHANNEL_ID" "$tagged" <<'PY'
-import json, sys
-print(json.dumps({"channel": sys.argv[1], "text": sys.argv[2]}))
-PY
-)"
+    payload="$(python3 -c 'import json, sys; print(json.dumps({"channel": sys.argv[1], "text": sys.argv[2]}))' "$CHANNEL_ID" "$tagged")"
     resp="$(slack_call chat.postMessage -H "Content-Type: application/json; charset=utf-8" --data "$payload")" \
       || { echo "Slack post: FAILED" >&2; exit 1; }
     if slack_ok "$resp"; then
