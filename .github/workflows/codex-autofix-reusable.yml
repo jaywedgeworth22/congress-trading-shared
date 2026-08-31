@@ -65,7 +65,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
-      - uses: anthropics/claude-code-action@dcb57747bfceeaa1fa72638cae52295d1d853d4a # v1
+      - uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1
         # Routed to DeepSeek via its Anthropic-compatible endpoint to control cost:
         # claude-code-action drives the Claude Code CLI, which honors
         # ANTHROPIC_BASE_URL / _AUTH_TOKEN / _MODEL, so this bills the DeepSeek key
