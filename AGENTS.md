@@ -97,3 +97,7 @@ literal two ASCII spaces stays correct — do not switch file content to NBSP or
 - **Same bar at every tier:** full gates, receipts, and board discipline apply no matter
   which model did the work.
 - Canonical reference: `/Users/jay/apps/AGENT-SYNC.md` — "Delegation & model economics".
+
+## Fleet recall
+
+Search `fleet-agents` before re-deriving a lesson (`recall "<topic>"` or MCP `recall_search`).  Contribute every reusable lesson at closeout (`recall contribute "…" --category lesson --app congress-trading-shared`).  Cloud seats: https://agents.jays.services/mcp .  Do not dump chat logs into the corpus.  Canonical: ai-fleet-coordinator/docs/RAG-FLEET-INFRA.md.
