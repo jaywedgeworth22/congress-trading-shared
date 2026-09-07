@@ -3,10 +3,10 @@
   "version": "2.6.0",
   "private": true,
   "type": "commonjs",
-  "description": "Shared types, Zod schemas, constants, and utilities for Congress.Trade ↔ Socratic Trade cross-app integration",
+  "description": "Shared types, Zod schemas, constants, and utilities for Congress.Trade \u2194 Socratic Trade cross-app integration",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -40,13 +40,13 @@
   },
   "devDependencies": {
     "zod": "^4.5.4",
-    "@types/node": "^20.19.9",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^5.0.0",
     "publint": "^0.3.24",
     "tsup": "^8.3.5",
     "typescript": "^7.0.2",
     "typescript-v5": "npm:typescript@6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "overrides": {
     "esbuild": "0.28.1"
