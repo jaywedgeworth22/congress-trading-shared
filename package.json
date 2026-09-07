@@ -36,10 +36,10 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
-    "zod": "^4.4.3",
+    "zod": "^4.5.4",
     "@types/node": "^20.19.9",
     "@vitest/coverage-v8": "^4.1.11",
     "publint": "^0.3.24",
