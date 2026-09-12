@@ -3,16 +3,17 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
-- **[congress-trading-shared][CURSOR] tickerLogoPolicy A/B/C/D seed (v2.6.0) (2026-08-23).** Pure `sourceOrderFor` + 2026-08-23 top-30 map. KV/jury stay in Congress.Trade. Branch `cursor/ticker-logo-policy`.
-- **[congress-trading-shared][CURSOR] Cross-app coordination follow-ups (2026-08-20).**  Pointer only.  Socratic.Trade audit #2802 follow-ups are in ST PR #2941, Congress.Trade #2064, Usage-Monitor #1245.  Pins still CTS v2.5.2.  Pin-check is fail-closed but not a required merge check.  DealDex stays protocol-only / Vercel.  Branch `cursor/cross-app-coordination-followups`.
+- (none)
 
 ## Completed
+- **[congress-trading-shared][CURSOR] Cross-app coordination follow-ups (2026-08-20).**  Pointer only.  Socratic.Trade audit #2802 follow-ups are in ST PR #2941, Congress.Trade #2064, Usage-Monitor #1245.  Pins still CTS v2.5.2.  Pin-check is fail-closed but not a required merge check.  DealDex stays protocol-only / Vercel.  Branch `cursor/cross-app-coordination-followups`.
 - **[congress-trading-shared][CURSOR] Retire leftover Deno Deploy current-shape in usage-telemetry-v2 rollout (2026-08-20).** COMPLETED. Docs-only. `docs/rollouts/2026-07-21-usage-telemetry-v2.md` now says Congress.Trade on Coolify. Dated history stays. No package API change. PR #275. Live Mac board needs reconciliation.
 - **2026-08-17 — GROK — BOARD HYGIENE — ISO 8601 already shipped as v2.3.0 (Deployed). First line preserved.**
 - **[congress-trading-shared][AG] ISO 8601 UTC date/time formatting contract (2026-07-24).** Adding `isIsoDateTime` and `toIsoUtcString` helpers to `src/utils.ts`, exporting `IsoDateTimeSchema` in `src/schemas.ts`, and releasing `v2.3.0`. Branch `ag/iso-8601-utc-datetime-formatting`.
 - **[congress-trading-shared][GROK] Fast-forward local main after Mac-storage prune — COMPLETED 2026-08-15.**  Discarded stale In-Progress row for already-merged #260/#262.  `git pull --ff-only` `c1f6787` → `88c72b3`.  0 open PRs.
 
 ## Deployed
+- **[congress-trading-shared][CURSOR] tickerLogoPolicy A/B/C/D seed (v2.6.0) (2026-08-23).** Pure `sourceOrderFor` + 2026-08-23 top-30 map. KV/jury stay in Congress.Trade. Branch `cursor/ticker-logo-policy`.
 - **[congress-trading-shared][CURSOR] v2.3.0 — DEPLOYED 2026-07-24.** PR #247 merged. `isIsoDateTime` and `toIsoUtcString` date-time helpers + `IsoDateTimeSchema`. 443 tests passing. Tag `v2.3.0` pushed.
 - **[congress-trading-shared][AG] v2.2.0 — RELEASED 2026-07-23.** PR #242 merged into `main`. Added Usage Monitor route constants (`/api/health`, `/api/ready`), producer & provider schemas/types, and pure `createUsageTelemetryV2Event` helper; updated `publint` to `^0.3.22`. 434 tests passing. Tag `v2.2.0` pushed.
 - **[congress-trading-shared][CURSOR] v2.1.0 — 2026-07-22.** PR #222 merged; tagged v2.1.0. `normalizeCompanyName()` with state-suffix stripping. Self-hosted CI re-enabled; runner has publint temp-dir issue (all code steps pass). Socratic.Trade upgraded v1.11.1→v2.1.0. 6 origin + 7 local stale branches deleted.
@@ -504,6 +505,8 @@ _Moved to In Progress 2026-07-05 (CURSOR): test coverage (L), SecurityRef subset
 stale branch deletion (S), publish.yml decommission (S), CHANGELOG.md (S), engines.node (S)._
 
 ## Changelog of this log
+- 2026-09-12 — AG: board hygiene. Moved tickerLogoPolicy to Deployed and Cross-app coordination follow-ups to Completed.
+
 - 2026-08-17 — GROK: board hygiene. Second In Progress emptied; ISO 8601 already Deployed v2.3.0; remaining cross-app rows parked Planned.
 - 2026-07-06 — CURSOR: completed Agentic Trading → Socratic Trade rename (7 files), added
   Zod schemas for AmountBracket/Subscription/SseMessage, expanded client tests from 17 to
