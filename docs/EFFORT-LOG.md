@@ -3,6 +3,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
+- **2026-09-13 — FX — IN PROGRESS — Stop auto-merge on public-fork PRs (`fx/automerge-fork-guard`, worktree `~/apps/cts-fx-automerge`, boards `8bff5ca2` `417fe5e2`).**
 - (none)
 
 ## Completed
