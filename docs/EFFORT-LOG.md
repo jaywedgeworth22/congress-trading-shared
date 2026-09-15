@@ -46,7 +46,6 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
   @AG claimed: Tue, Sep 15, 2026 ~/apps/congress-trading-shared @ ag/planned-issues — PR #301 merged.
 - **[congress-trading-shared][CURSOR] Cross-app coordination follow-ups (2026-08-20).**  Pointer only.  Socratic.Trade audit #2802 follow-ups are in ST PR #2941, Congress.Trade #2064, Usage-Monitor #1245.  Pins still CTS v2.5.2.  Pin-check is fail-closed but not a required merge check.  DealDex stays protocol-only / Vercel.  Branch `cursor/cross-app-coordination-followups`.
 - **[congress-trading-shared][CURSOR] Retire leftover Deno Deploy current-shape in usage-telemetry-v2 rollout (2026-08-20).** COMPLETED. Docs-only. `docs/rollouts/2026-07-21-usage-telemetry-v2.md` now says Congress.Trade on Coolify. Dated history stays. No package API change. PR #275. Live Mac board needs reconciliation.
-- **2026-08-17 — GROK — BOARD HYGIENE — ISO 8601 already shipped as v2.3.0 (Deployed). First line preserved.**
 - **[congress-trading-shared][AG] ISO 8601 UTC date/time formatting contract (2026-07-24).** Adding `isIsoDateTime` and `toIsoUtcString` helpers to `src/utils.ts`, exporting `IsoDateTimeSchema` in `src/schemas.ts`, and releasing `v2.3.0`. Branch `ag/iso-8601-utc-datetime-formatting`.
 - **[congress-trading-shared][GROK] Fast-forward local main after Mac-storage prune — COMPLETED 2026-08-15.**  Discarded stale In-Progress row for already-merged #260/#262.  `git pull --ff-only` `c1f6787` → `88c72b3`.  0 open PRs.
 
@@ -479,7 +478,6 @@ Completed occurrence.
   no package code changes in this repo.
 
 ## Planned / Reserved
-- **2026-08-17 — GROK — BOARD HYGIENE — July 2026 cross-app leftovers parked Planned (not active). First lines preserved.**
 
 ## Changelog of this log
 - 2026-09-12 — AG: board hygiene. Moved tickerLogoPolicy to Deployed and Cross-app coordination follow-ups to Completed.
