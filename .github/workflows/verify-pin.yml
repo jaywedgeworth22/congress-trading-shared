@@ -1,0 +1,26 @@
+name: Verify exact-pin drift
+on:
+  workflow_call:
+    inputs:
+      expected_ref:
+        description: 'The expected git tag or commit SHA'
+        required: true
+        type: string
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout consumer repo
+        uses: actions/checkout@v4
+      
+      - name: Check package.json
+        run: |
+          set -e
+          echo "Verifying exact pin for congress-trading-shared"
+          EXPECTED="${{ inputs.expected_ref }}"
+          
+          if ! grep -q "github:jaywedgeworth22/congress-trading-shared#$EXPECTED" package.json; then
+            echo "Error: package.json does not contain exact pin $EXPECTED for congress-trading-shared"
+            exit 1
+          fi
+          echo "package.json pin is exact."
