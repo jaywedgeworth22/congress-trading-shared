@@ -3,10 +3,47 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
-- **2026-09-13 — FX — IN PROGRESS — Stop auto-merge on public-fork PRs (`fx/automerge-fork-guard`, worktree `~/apps/cts-fx-automerge`, boards `8bff5ca2` `417fe5e2`).**
 - (none)
 
 ## Completed
+- **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
+  Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
+  responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
+  the shared client promises. Keep `SecurityRef` as the full read-side shape; add safe client-side
+  normalization where backward-compatible and route the producer mapping fix to the Congress.Trade
+  owner without editing that consumer from this repository lane.
+  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the `sharesOutstanding` half is already neutralised on every normalized client path — `normalizeSecurityRef` (src/client.ts:59-63) backfills it to null and src/__tests__/client.test.ts:316-320 pins it, so `getRef`/`getRefs`/`getBundle` do NOT throw against the live producer (`mapSecurityRef`, Congress.Trade app/src/delivery/rest.ts:849-875, emits all 20 other required keys). STILL OPEN: (a) the scoped-enrichment half of this item was never audited; (b) `normalizeSecurityRef` is module-private and NOT re-exported from src/index.ts, so consumers calling `SecurityRefSchema.parse` directly are still unprotected — **RESOLVED 2026-07-19 by PR #203 (`bed364f`), released in v1.11.0: `normalizeSecurityRef` is now exported (no behaviour change, purely additive) with 4 regression tests incl. one proving direct-parse fails without it and succeeds with it**; (c) unverified value-level risks: `marketCapBucket` is passed through raw against a 6-value enum, and `currentPriceDate` must be `YYYY-MM-DD` — one bad row throws an entire `getRefs` batch of up to 500.
+  @AG claimed: Tue, Sep 15, 2026 ~/apps/congress-trading-shared @ ag/planned-issues — PR #301 merged.
+- **Consolidate drifted transaction and client/PWA read contracts (cross-app, P2/M).**
+  Shared transaction schemas omit producer fields such as confidence/source/createdAt/cursorSeq and
+  route-added chamber/memberName; `ClientTransactionSchema` omits emitted `estValue`, while the
+  Congress PWA duplicates the full shape locally. Expand portable read contracts without weakening
+  import schemas, then route producer typing/PWA adoption to Congress.Trade.
+  @AG claimed: Tue, Sep 15, 2026 ~/apps/congress-trading-shared @ ag/planned-issues — PR #301 merged.
+- **Choose a supported authenticated SSE subscription-provisioning flow (cross-app, P1/M).**
+  Socratic.Trade auto-subscribe calls the shared client with no auth while Congress.Trade now requires
+  an end-user session and ignores the posted `clientId`, so the advertised mode always gets HTTP 401.
+  Keep credentials/auth enforcement app-local; coordinate removal of auto mode or a scoped M2M
+  provisioning design, then update shared client docs/signature to match the chosen contract.
+  Also expose the required per-subscription stream secret in `streamUrl` for EventSource callers;
+  preserve the existing bearer-header path used by Socratic.Trade.
+  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the shared client is NOT authless (src/client.ts:99-105 sets `authorization: Bearer` when a token is configured). Nothing to fix inside this repo for the 401 itself; the defective call site is Socratic.Trade `src/lib/congress-stream.ts:77-84`. Remaining work is the cross-app decision only (drop auto-subscribe, or design a scoped M2M provisioning credential) plus the shared doc/signature update.
+  @AG claimed: Tue, Sep 15, 2026 ~/apps/congress-trading-shared @ ag/planned-issues — PR #301 merged.
+- **Make exact-pin drift checks tokenless, symmetric, and fail-closed (cross-app, P1/M).**
+  Current consumer workflows either compare only package specs or require the retired package token,
+  then skip on missing credentials/peer fetch errors. Both repos are public exact-tag consumers.
+  Route a shared reusable lock-SHA/tag check that needs no package token and fails on peer drift.
+  @AG claimed: Tue, Sep 15, 2026 ~/apps/congress-trading-shared @ ag/planned-issues — PR #301 merged.
+- **Remove retired GitHub Packages auth from Congress.Trade cloud bootstrap (cross-app, P2/S).**
+  Congress.Trade still appends registry credentials to `$HOME/.npmrc` and warns installs need a token,
+  contradicting this package's public tokenless-Git policy. Consumer owner must delete the obsolete
+  auth block and verify setup from a clean home; this lane remains read-only there.
+  @AG claimed: Tue, Sep 15, 2026 ~/apps/congress-trading-shared @ ag/planned-issues — PR #301 merged.
+- **Align analytics endpoint schemas with production rows (CODEX, P2/M).**
+  Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
+  nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
+  normalized fields and endpoint-envelope tests without inventing app runtime logic.
+  @AG claimed: Tue, Sep 15, 2026 ~/apps/congress-trading-shared @ ag/planned-issues — PR #301 merged.
 - **[congress-trading-shared][CURSOR] Cross-app coordination follow-ups (2026-08-20).**  Pointer only.  Socratic.Trade audit #2802 follow-ups are in ST PR #2941, Congress.Trade #2064, Usage-Monitor #1245.  Pins still CTS v2.5.2.  Pin-check is fail-closed but not a required merge check.  DealDex stays protocol-only / Vercel.  Branch `cursor/cross-app-coordination-followups`.
 - **[congress-trading-shared][CURSOR] Retire leftover Deno Deploy current-shape in usage-telemetry-v2 rollout (2026-08-20).** COMPLETED. Docs-only. `docs/rollouts/2026-07-21-usage-telemetry-v2.md` now says Congress.Trade on Coolify. Dated history stays. No package API change. PR #275. Live Mac board needs reconciliation.
 - **2026-08-17 — GROK — BOARD HYGIENE — ISO 8601 already shipped as v2.3.0 (Deployed). First line preserved.**
@@ -443,67 +480,6 @@ Completed occurrence.
 
 ## Planned / Reserved
 - **2026-08-17 — GROK — BOARD HYGIENE — July 2026 cross-app leftovers parked Planned (not active). First lines preserved.**
-- **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
-  Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
-  responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
-  the shared client promises. Keep `SecurityRef` as the full read-side shape; add safe client-side
-  normalization where backward-compatible and route the producer mapping fix to the Congress.Trade
-  owner without editing that consumer from this repository lane.
-  
-  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the `sharesOutstanding` half is already neutralised on every normalized client path — `normalizeSecurityRef` (src/client.ts:59-63) backfills it to null and src/__tests__/client.test.ts:316-320 pins it, so `getRef`/`getRefs`/`getBundle` do NOT throw against the live producer (`mapSecurityRef`, Congress.Trade app/src/delivery/rest.ts:849-875, emits all 20 other required keys). STILL OPEN: (a) the scoped-enrichment half of this item was never audited; (b) `normalizeSecurityRef` is module-private and NOT re-exported from src/index.ts, so consumers calling `SecurityRefSchema.parse` directly are still unprotected — **RESOLVED 2026-07-19 by PR #203 (`bed364f`), released in v1.11.0: `normalizeSecurityRef` is now exported (no behaviour change, purely additive) with 4 regression tests incl. one proving direct-parse fails without it and succeeds with it**; (c) unverified value-level risks: `marketCapBucket` is passed through raw against a 6-value enum, and `currentPriceDate` must be `YYYY-MM-DD` — one bad row throws an entire `getRefs` batch of up to 500.
-- **Consolidate drifted transaction and client/PWA read contracts (cross-app, P2/M).**
-  Shared transaction schemas omit producer fields such as confidence/source/createdAt/cursorSeq and
-  route-added chamber/memberName; `ClientTransactionSchema` omits emitted `estValue`, while the
-  Congress PWA duplicates the full shape locally. Expand portable read contracts without weakening
-  import schemas, then route producer typing/PWA adoption to Congress.Trade.
-- **Choose a supported authenticated SSE subscription-provisioning flow (cross-app, P1/M).**
-  Socratic.Trade auto-subscribe calls the shared client with no auth while Congress.Trade now requires
-  an end-user session and ignores the posted `clientId`, so the advertised mode always gets HTTP 401.
-  Keep credentials/auth enforcement app-local; coordinate removal of auto mode or a scoped M2M
-  provisioning design, then update shared client docs/signature to match the chosen contract.
-  Also expose the required per-subscription stream secret in `streamUrl` for EventSource callers;
-  preserve the existing bearer-header path used by Socratic.Trade.
-  
-  **PARTIALLY STALE — 2026-07-19 CLAUDE re-audit:** the shared client is NOT authless (src/client.ts:99-105 sets `authorization: Bearer` when a token is configured). Nothing to fix inside this repo for the 401 itself; the defective call site is Socratic.Trade `src/lib/congress-stream.ts:77-84`. Remaining work is the cross-app decision only (drop auto-subscribe, or design a scoped M2M provisioning credential) plus the shared doc/signature update.
-- **Make exact-pin drift checks tokenless, symmetric, and fail-closed (cross-app, P1/M).**
-  Current consumer workflows either compare only package specs or require the retired package token,
-  then skip on missing credentials/peer fetch errors. Both repos are public exact-tag consumers.
-  Route a shared reusable lock-SHA/tag check that needs no package token and fails on peer drift.
-- **Remove retired GitHub Packages auth from Congress.Trade cloud bootstrap (cross-app, P2/S).**
-  Congress.Trade still appends registry credentials to `$HOME/.npmrc` and warns installs need a token,
-  contradicting this package's public tokenless-Git policy. Consumer owner must delete the obsolete
-  auth block and verify setup from a clean home; this lane remains read-only there.
-- **Align analytics endpoint schemas with production rows (CODEX, P2/M).**
-  Conviction/cluster/leaderboard/conflict schemas omit current metadata and reject legitimate
-  nullable names/party values; raw client casts hide the drift. Add production-shaped optional or
-  normalized fields and endpoint-envelope tests without inventing app runtime logic.
-
-
-- CI standard adoption (cross-app, Claude) — RESERVED: 5-line caller workflow consuming the Socratic.Trade reusable verify gate + Mac runner registration. Blocked by: hub repo's reusable `workflow_call` verify gate not built yet — `claude/ci-actions-efficiency` landed WITHOUT producing it (docs-only fast path); current dependency is Socratic.Trade PR #372 (`claude/ci-hybrid-runner-verify`, open) + follow-on reusable entry point. _2026-07-05 (CLAUDE): blocker re-verified and updated._
-  _2026-07-05 (CLAUDE next-wave): blocker check re-verified again this cycle — confirmed
-  `claude/ci-hybrid-runner-verify` does not exist on Socratic.Trade's origin and no reusable
-  verify-gate workflow is on its `main` (only the #370 docs-fast-path efficiency change landed).
-  Still blocked; the companion Completed-section blocker-check row above is answerable and closed
-  as of this pass — nothing further to do here except wait on the Socratic.Trade side._
-
-_2026-07-04 backlog exhaustiveness pass (CLAUDE, owner-directed). Tags: CURSOR = Cursor background
-agents (DeepSeek v4 Pro), AG = Antigravity/Gemini, CLAUDE = Claude Code. Assignments are
-reservations, not locks — re-negotiate in #agent-sync._
-- **Split `TICKER_ALIASES` into rename-vs-acquisition classes (AG, M, cross-app)** — shared portion done in v1.3.0; consumer migration pending. ATVI→MSFT is
-  undifferentiated from FB→META; Socratic.Trade guards locally (`ACQUISITION_SOURCES`),
-  Congress.Trade has no guard. Design the shared API change, surface to owner, then update both
-  consumers. Paired rows on both consumer boards.
-  _2026-07-05 (MONET): shared-library portion picked up under owner direction. Remaining AG scope after that lands = consumer migration only
-  (Congress.Trade + Socratic.Trade). AG: ping in #agent-sync if you'd already started; I'll yield/dedup._
-
-## Archived provenance — terminal rows reconciled above
-
-- ~~**Repair the stale Mac clone `main` (CLAUDE, S)** — local `main` diverged (7 dead WIP commits,
-  missing 12 origin commits incl. v1.2.0); salvage-check the WIP commits, then fast-forward. Not a
-  blind reset.~~ _2026-07-05 (CLAUDE): moved to In Progress._
-
-_Moved to In Progress 2026-07-05 (CURSOR): test coverage (L), SecurityRef subset test (S),
-stale branch deletion (S), publish.yml decommission (S), CHANGELOG.md (S), engines.node (S)._
 
 ## Changelog of this log
 - 2026-09-12 — AG: board hygiene. Moved tickerLogoPolicy to Deployed and Cross-app coordination follow-ups to Completed.
