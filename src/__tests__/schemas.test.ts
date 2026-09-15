@@ -318,10 +318,10 @@ describe("SecurityRefSchema", () => {
     ).toBe(false);
   });
 
-  it("rejects invalid marketCapBucket", () => {
-    expect(
-      SecurityRefSchema.safeParse({ ...validRef, marketCapBucket: "giant" }).success,
-    ).toBe(false);
+  it("accepts invalid marketCapBucket by catching null", () => {
+    const res = SecurityRefSchema.safeParse({ ...validRef, marketCapBucket: "giant" });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.marketCapBucket).toBeNull();
   });
 
   it("rejects non-boolean isEtf", () => {

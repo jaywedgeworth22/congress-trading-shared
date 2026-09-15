@@ -88,7 +88,7 @@ export const SecurityRefSchema = z.object({
   exchangeShort: z.string().nullable(),
   currency: z.string().nullable(),
   marketCap: z.number().nullable(),
-  marketCapBucket: MktCapBucketSchema.nullable(),
+  marketCapBucket: MktCapBucketSchema.nullable().catch(null),
   sharesOutstanding: z.number().nullable(),
   ipoDate: z.string().nullable(),
   cik: z.string().nullable(),
@@ -97,7 +97,7 @@ export const SecurityRefSchema = z.object({
   source: z.string().nullable(),
   enrichedAt: z.string().nullable().optional(),
   currentPrice: z.number().nullable().optional(),
-  currentPriceDate: IsoDateSchema.nullable().optional(),
+  currentPriceDate: IsoDateSchema.nullable().optional().catch(undefined),
 });
 export type SecurityRef = z.infer<typeof SecurityRefSchema>;
 
@@ -269,6 +269,7 @@ export type InsiderRow = z.infer<typeof InsiderRowSchema>;
 
 /** Read-side shape returned by the ticker-scoped Congress.Trade insider endpoint. */
 export const InsiderReadRowSchema = InsiderRowSchema.extend({
+  ticker: z.string().optional(),
   sentiment: z.number().nullable(),
   buyFilings: z.number().nullable(),
   sellFilings: z.number().nullable(),
@@ -287,6 +288,7 @@ export type ShortVolumeRow = z.infer<typeof ShortVolumeRowSchema>;
 
 /** Read-side shape returned by the ticker-scoped Congress.Trade short-volume endpoint. */
 export const ShortVolumeReadRowSchema = ShortVolumeRowSchema.extend({
+  ticker: z.string().optional(),
   ratio: z.number().nullable(),
 });
 export type ShortVolumeReadRow = z.infer<typeof ShortVolumeReadRowSchema>;
