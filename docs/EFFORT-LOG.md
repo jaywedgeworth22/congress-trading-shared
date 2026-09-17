@@ -6,6 +6,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (none)
 
 ## Completed
+- **2026-09-16 - CLAUDE - PLANNED - congress-trading-shared v2.7.0: CT vendor provenance commit does not match the actual v2.7.0 tag (immutable release appears to have moved).** <!-- wb-agent-report:bf0dc1147a33443b9e3badb8aace2826 -->
 - **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
   Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
   responses, and scoped enrichment endpoints return nullable rows without the per-row ticker that
