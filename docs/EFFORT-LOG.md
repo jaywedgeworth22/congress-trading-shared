@@ -3,19 +3,26 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
-- **2026-09-18 - CURSOR - IN PROGRESS - Shared package hygiene for v2.7.0 (cross-app, P3/S).**
-  Append `[2.7.0]` Keep-a-Changelog section matching v2.6.0 format and bullet only the actual commits between
-  the v2.6.0 and v2.7.0 tags (no fabrication). Branch `cursor/shared-hygiene-2-7-0`, target `main`. No package.json
-  change, no new tag, no Vitest 5 / CJS-ESM config cleanup, no CT `VENDOR-PROVENANCE.md` fix — those are parked
-  follow-ups. Companion action: resync Socratic.Trade's `package-lock.json` so the
-  `node_modules/@jaywedgeworth22/congress-trading-shared` entry resolves to `af11d70` / v2.7.0 (tokenless git ref
-  bump only; abort and report if the lockfile touches anything else).
-  Note: `origin/main` is currently at `dfd259e` (1 ahead of local `main` after the docs-sync merge) while local `main`
-  is at `af11d70` (the v2.7.0 release bump) — diverged, no fast-forward is possible without force or merge commit. The
-  v2.7.0 tag *was* minted off `af11d70`; the upstream merge landed without the bump, so the divergence is real. Branching
-  off local `main` (the v2.7.0 mark) and letting CI decide whether the merge into `main` is clean is the no-force path.
+- (none)
 
 ## Completed
+- **2026-09-18 - CURSOR - Shared package hygiene for v2.7.0 (cross-app, P3/S).** Branch
+  `cursor/shared-hygiene-2-7-0`, PR #305 (`00f3cfee`, squash-merged to `main`). Appended
+  a `[2.7.0]` Keep-a-Changelog section in the file's existing format, between
+  `[Unreleased]` and `[2.6.0]`; bullets cover only the actual commits between the
+  v2.6.0 and v2.7.0 tags, grouped Added/Changed/Fixed. Companion action
+  (Socratic.Trade lockfile resync) reported back as a no-op — the consumer's
+  `package.json` already pins `github:jaywedgeworth22/congress-trading-shared#v2.7.0`
+  and the lockfile already resolves to the published tag's peeled commit
+  `5748e53` (which is tree-identical to the local-only `af11d70`); re-tinting the
+  remote `v2.7.0` tag or pinning a commit in `package.json` would have violated
+  the no-bump / no-tag-recreate constraints. Local main fast-forward was
+  attempted against `origin/main` (which had diverged to a docs-only commit at
+  `dfd259e` after the local `af11d70` v2.7.0 bump) and could not proceed
+  without forcing/merging main; the PR was cut off the local v2.7.0 mark and
+  `gh pr merge --squash --auto` landed cleanly once CI cleared. Parked follow-ups
+  (CT `VENDOR-PROVENANCE.md` stale-line fix; vitest 5 + CJS/ESM configLoader
+  warning) untouched per the brief.
 - **2026-09-16 - CLAUDE - PLANNED - congress-trading-shared v2.7.0: CT vendor provenance commit does not match the actual v2.7.0 tag (immutable release appears to have moved).** <!-- wb-agent-report:bf0dc1147a33443b9e3badb8aace2826 -->
 - **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
   Current Congress.Trade `origin/main` omits required `sharesOutstanding` from real SecurityRef
