@@ -3,7 +3,17 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-20.
 
 ## In Progress
-- (none)
+- **2026-09-18 - CURSOR - IN PROGRESS - Shared package hygiene for v2.7.0 (cross-app, P3/S).**
+  Append `[2.7.0]` Keep-a-Changelog section matching v2.6.0 format and bullet only the actual commits between
+  the v2.6.0 and v2.7.0 tags (no fabrication). Branch `cursor/shared-hygiene-2-7-0`, target `main`. No package.json
+  change, no new tag, no Vitest 5 / CJS-ESM config cleanup, no CT `VENDOR-PROVENANCE.md` fix — those are parked
+  follow-ups. Companion action: resync Socratic.Trade's `package-lock.json` so the
+  `node_modules/@jaywedgeworth22/congress-trading-shared` entry resolves to `af11d70` / v2.7.0 (tokenless git ref
+  bump only; abort and report if the lockfile touches anything else).
+  Note: `origin/main` is currently at `dfd259e` (1 ahead of local `main` after the docs-sync merge) while local `main`
+  is at `af11d70` (the v2.7.0 release bump) — diverged, no fast-forward is possible without force or merge commit. The
+  v2.7.0 tag *was* minted off `af11d70`; the upstream merge landed without the bump, so the divergence is real. Branching
+  off local `main` (the v2.7.0 mark) and letting CI decide whether the merge into `main` is clean is the no-force path.
 
 ## Completed
 - **Restore Congress.Trade producer conformance to full shared read contracts (cross-app, P0/M).**
